@@ -1,0 +1,144 @@
+
+-- Guards
+
+let pow2 n
+      | n == 0 = 1
+      | otherwise = 2 * (pow2(n -1))
+
+
+-- Pattern matching combined with guards
+
+let removeOdd [] = []
+    removeOdd (x : xs)
+      | mod x 2 == 0 = x : (removeOdd xs)
+      | otherwise = removeOdd xs
+
+
+-- Case
+-- This implementation of anyEven removes all the odd numbers from a list then looks at what's left
+
+let anyEven nums = case (removeOdd nums) of
+      []       -> False
+      (x : xs) -> True
+
+
+-- Alternative anyEven implementation, just walks the list looking for the first even number
+
+let anyEven' [] = False
+    anyEven' (x : xs)
+      | mod x 2 == 0 = True
+      | otherwise anyEven(xs)
+
+
+-- 1/99 questions: Find the last element of a list.
+-- (Can't handle empty list)
+
+let myLast (x : xs)
+      | (null xs) = x
+      | otherwise = myLast xs
+
+-- Functional composition version
+
+let myLast = head . reverse
+
+-- Which is equivalent to
+
+let myLast x = head (reverse x)
+
+
+-- 2/99 questions: Find the last but one element of a list.
+-- (Can't handle lists containing <2 elements)
+
+let lastButOne (x :xs)
+      | ((length xs) == 1) = x
+      | otherwise          = lastButOne xs
+
+
+-- 3/99 questions: Find the K'th element of a list (where first element == 1)
+-- (Can't handle lists containing <k elements)
+
+let elementAt n (x : xs)
+     | (n == 1) = x
+     | othe
+     
+
+-- Version with more error handling
+
+let elementAt n [] = error "Empty collection"
+    elementAt n (x : xs)
+      | n < 1 = error "Position must be >= 1"
+      | (n - 1) > (length xs) = error "Requested position is off the end of the collection"
+      | n == 1 = x
+      | otherwise = elementAt (n - 1) xs
+
+
+-- 4/99 questions: Return length of a list
+
+let myLength [] = 0
+    myLength (_ : xs) = 1 + myLength xs
+
+
+-- Max value from list - using the "max" builtin Functional
+
+let myMax [] = error "Empty list!"
+    myMax [x] = x
+    myMax (x:xs) = max x (myMax xs)
+
+
+-- A replicate function to generate a list of N xs
+
+let replicate n x
+      | n < 0     = error "N cannot be negative."
+      | n == 0    = []
+      | otherwise = x : replicate (n-1) x
+
+
+-- Take first N items from list
+
+let take n [] = []
+    take 0 _ = []
+    take n (x:xs) = x : take (n-1) xs
+
+
+-- Zip 2 collections into a single collection of tuples
+
+let myZip [] _ = []
+    myZip _ [] = []
+    myZip (x:xs) (y:ys) = (x,y) : myZip xs ys
+
+
+-- Zip 2 lists into a single list, containing the results of applying a function to each pair of values
+
+let myZipWith :: (a -> b -> c) -> [a] -> [b] -> [c];
+    myZipWith _ [] _ = []
+    myZipWith _ _ [] = []
+    myZipWith f (x:xs) (y:ys) = (f x y) : (myZipWith f xs ys)
+    
+
+-- Bubble sort - version 1, using list comprehension
+
+let mySort [] = []
+    mySort [x] = [x]
+    mySort (x:xs) =
+      let sortedLower  = mySort [l | l <- xs, l < x]
+          sortedHigher = mySort [h | h <- xs, h >= x]
+      in  sortedLower ++ [x] ++ sortedHigher
+
+
+-- Bubble sort - version 2, using filter
+
+let mySort [] = []
+    mySort [x] = [x]
+    mySort (x:xs) =
+      let sortedLower  = mySort (filter (<x) xs)
+          sortedHigher = mySort (filter (>=x) xs)
+      in sortedLower ++ [x] ++ sortedHigher
+
+
+-- Use of $ to apply a list of partially applied functions
+
+let timesTable = [(1*), (2*), (3*), (4*), (5*), (6*), (7*), (8*), (9*), (10*)]
+ 
+map ($ 5) timesTable
+[5,10,15,20,25,30,35,40,45,50]
+ 
