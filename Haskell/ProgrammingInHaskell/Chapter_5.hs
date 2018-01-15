@@ -108,3 +108,8 @@ crack xs = encode (-shift) xs
                where shift = fst(minimumBy (compare `on` snd) chiSquareResults)
                      chiSquareResults = [(n, chiSquare (leftRotate n observedFrequencies) expectedFrequencies) | n <- [0..25]]
                      observedFrequencies = freqOfLowers xs
+
+-- scalar product of 2 lists of integers
+
+scalarProduct :: [Int] -> [Int] -> Int
+scalarProduct xs ys = sum [x*y| (x,y) <- zip xs ys]
