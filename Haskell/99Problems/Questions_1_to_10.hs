@@ -51,3 +51,17 @@ elementAt' n (x : xs)
 myLength :: [a] -> Int
 myLength [] = 0
 myLength (_ : xs) = 1 + myLength xs
+
+
+-- 5/99: Reverse a list
+
+myReverse :: [a] -> [a]
+myReverse [] = []
+myReverse (x:xs) = (myReverse xs) ++ [x]
+
+
+-- 6/99: Check whether list is a palindrome
+
+myPalindrome :: Eq a => [a] -> Bool
+myPalindrome xs = (xs == sx)
+                  where sx = myReverse xs
