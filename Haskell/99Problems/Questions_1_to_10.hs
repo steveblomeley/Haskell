@@ -1,4 +1,6 @@
 
+import Data.List
+
 -- 1/99 questions: Find the last element of a list.
 -- (Can't handle empty list)
 
@@ -65,3 +67,23 @@ myReverse (x:xs) = (myReverse xs) ++ [x]
 myPalindrome :: Eq a => [a] -> Bool
 myPalindrome xs = (xs == sx)
                   where sx = myReverse xs
+
+
+-- 7/99: Flatten a nested list structure
+-- Come back to this (needs bespoke type)
+
+
+-- 9/99: Eliminate consecutive duplicates of list elements
+
+myCompress :: Eq a => [a] -> [a]
+myCompress [] = []
+myCompress (x:xs)
+    | xs == []     = [x]
+    | x == head xs = myCompress xs
+    | otherwise    = x : myCompress xs
+
+
+-- 10/99: Run length encoding of a list
+
+myEncode :: Eq a => [a] -> [(Int,a)]
+myEncode xs = [(length x, head x) | x <- group xs]
