@@ -51,7 +51,6 @@ euclid x y
     | x < y  = euclid x (y-x) -- meaning is clearer than "otherwise"
 
 -- Ex 6. implementations of standard list functions 
--- x = 
 all' :: [Bool] -> Bool
 all' [] = True
 all' (x:xs) = x && (all' xs)
@@ -69,5 +68,46 @@ replicate' n x = x : (replicate' (n-1) x)
 (_:xs) !!! n = xs !!! (n-1)
 
 elem' :: Eq a => a -> [a] -> Bool
-elem' _ []   = False
+elem' _ []     = False
 elem' x (y:ys) = (x == y) || (elem' x ys)
+
+-- Ex 7. merge 2 sorted lists into a single sorted list
+merge :: Ord a => [a] -> [a] -> [a]
+merge xs [] = xs
+merge [] ys = ys
+merge (x:xs) (y:ys)
+    | x < y     = x : (merge xs (y:ys))
+    | otherwise = y : (merge (x:xs) ys)
+
+-- Ex 8. use merge to implement a merge sort
+--       v1. simplest approach, splits list of length N into N single element lists, then merges them
+msort :: Ord a => [a] -> [a]
+msort [] = []
+msort [x] = [x]
+msort (x:xs) = merge [x] (msort xs)
+
+-- Ex 8. v2. halve the list, sort each half, then merge the sorted halves back together
+halve :: [a] -> ([a],[a])
+halve [] = ([],[])
+halve xs = (take n xs, drop n xs)
+           where n = (length xs) `div` 2
+
+msort' :: Ord a => [a] -> [a]
+msort' [] = []
+msort' [x] = [x]
+msort' xs = merge (msort' front) (msort' back)
+            where (front,back) = halve xs
+
+-- Ex 9. implementations of sum, take and last
+sum' :: Num a => [a] -> a
+sum' [] = 0
+sum' (x:xs) = x + (sum' xs)
+
+take' :: Int -> [a] -> [a]
+take' _ [] = []
+take' 0 _  = []
+take' n (x:xs) = x : (take (n-1) xs)
+
+last' :: [a] -> a
+last' [x] = x
+last' (_:xs) = last' xs
