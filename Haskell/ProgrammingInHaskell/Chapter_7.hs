@@ -16,6 +16,7 @@ filtr :: [Bool] -> [Bool]
 filtr = filter id
 
 -- (2) Used with a fold to compose a single function from a list of functions
+--     Though the results of this are a bit baffling...
 f1 :: Int -> Int
 f1 = (\ x -> (x * 3))
 
