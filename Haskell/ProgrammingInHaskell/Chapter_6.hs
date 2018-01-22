@@ -9,7 +9,7 @@ even' n = odd' (n-1)
 odd' 0 = False
 odd' n = even' (n-1)
 
--- mutual recursion - eg 2
+-- mutual recursion - eg 2. return only the even (or odd) indexed elements in a list
 
 evens :: [a] -> [a]
 odds :: [a] -> [a]
@@ -41,16 +41,17 @@ _ ^* 0 = 1
 n ^* x = n * (n^*(x-1))
 
 -- Ex 4. implement euclid's algorithm to determine greatest common divisor of 2 non -ve integers
--- Behaviour of empty list based on linq:
---           Enumerable.Empty<object>().All(x => true) == true
--- ...and... Enumerable.Empty<object>().All(x => false) == true
 euclid :: Int -> Int -> Int
 euclid x y
     | x == y = x
     | x > y  = euclid (x-y) y
-    | x < y  = euclid x (y-x) -- meaning is clearer than "otherwise"
+    | x < y  = euclid x (y-x) -- covers all cases, and meaning is clearer than "otherwise"
 
--- Ex 6. implementations of standard list functions 
+-- Ex 6. implementations of assorted standard list functions 
+
+-- Behaviour of empty list based on linq:
+--           Enumerable.Empty<object>().All(x => true) == true
+-- ...and... Enumerable.Empty<object>().All(x => false) == true
 all' :: [Bool] -> Bool
 all' [] = True
 all' (x:xs) = x && (all' xs)
