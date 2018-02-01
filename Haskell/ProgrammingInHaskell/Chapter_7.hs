@@ -28,3 +28,7 @@ fs = [f1, f2]
 
 f1thenf2 :: Int -> Int
 f1thenf2 = foldr (.) id fs
+
+-- Ex. 1. express the list comprehension [f x | x <- xs, p x] in terms of map & filter
+filterAndMap :: (a -> Bool) -> (a -> b) -> [a] -> [b]
+filterAndMap p f xs = map f $ filter p xs
