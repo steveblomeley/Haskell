@@ -42,3 +42,24 @@ all' p xs = foldr (\x a -> (p x) && a) True xs
 
 any' :: (a -> Bool) -> [a] -> Bool
 any' p xs = foldr (\x a -> (p x) || a) False xs
+
+takeWhile' :: (a -> Bool) -> [a] -> [a]
+takeWhile' _ [] = []
+takeWhile' p (x:xs) | p x = x : takeWhile' p xs
+                    | otherwise = []
+
+dropWhile' :: (a -> Bool) -> [a] -> [a]
+dropWhile' _ [] = []
+dropWhile' p (x:xs) | p x = dropWhile' p xs
+                    | otherwise = x:xs
+
+-- Ex 3. Redefine map f and filter p using foldr
+map' :: (a -> b) -> [a] -> [b]
+map' f xs = foldr (\x acc -> f x : acc) [] xs
+
+filter' :: (a -> Bool) -> [a] -> [a]
+filter' p xs = foldr (\x acc -> if p x then x : acc else acc) [] xs
+
+-- Ex 4. Convert list of N single digit ints into a single N digit int, e.g. [1,2,3] -> 123
+intListToInt :: [Int] -> Int
+intListToInt is = foldl (\acc i -> 10 * acc + i) 0 is
