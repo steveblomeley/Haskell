@@ -98,3 +98,9 @@ map'' f = unfold (== []) (f . head) tail
 -- iterate f
 iterate' :: (a -> a) -> a -> [a]
 iterate' f = unfold (\x -> False) f (\x -> x)
+
+
+-- Ex 9. altMap - maps 2 functions to alternate members of a list
+altMap :: (a -> b) -> (a -> b) -> [a] -> [b]
+altMap _ _ [] = []
+altMap f1 f2 (x:xs) = f1 x : altMap f2 f1 xs
