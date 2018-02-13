@@ -55,11 +55,42 @@ dropWhile' p (x:xs) | p x = dropWhile' p xs
 
 -- Ex 3. Redefine map f and filter p using foldr
 map' :: (a -> b) -> [a] -> [b]
-map' f xs = foldr (\x acc -> f x : acc) [] xs
+map' f = foldr (\x acc -> f x : acc) []
 
 filter' :: (a -> Bool) -> [a] -> [a]
-filter' p xs = foldr (\x acc -> if p x then x : acc else acc) [] xs
+filter' p = foldr (\x acc -> if p x then x : acc else acc) []
+
 
 -- Ex 4. Convert list of N single digit ints into a single N digit int, e.g. [1,2,3] -> 123
 intListToInt :: [Int] -> Int
-intListToInt is = foldl (\acc i -> 10 * acc + i) 0 is
+intListToInt = foldl (\acc i -> 10 * acc + i) 0
+
+
+-- Ex 5. Implement curry and uncurry
+curry' :: ((a,b) -> c) -> a -> b -> c
+--curry' f = (\x -> (\y -> f (x,y)))
+curry' f = \x y -> f (x,y)
+
+uncurry' :: (a -> b -> c) -> (a,b) -> c
+--uncurry' f = (\(x,y) -> f x y)
+uncurry' f = \(x,y) -> f x y
+
+
+-- Ex 6. Using unfold - a recursive operation to generate a list from a single value
+
+type Bit = Int
+
+unfold :: (a -> Bool) -> (a -> b) -> (a -> a) -> a -> [b]
+unfold p h t x | p x       = []
+               | otherwise = h x : unfold p h t (t x)
+
+int2bin :: Int -> [Bit]
+int2bin = unfold (==0) (`mod` 2) (`div` 2)
+
+-- chop 8 - which I called stream2bytes
+stream2bytes' :: [Bit] -> [[Bit]]
+stream2bytes' = unfold (== []) (take 8) (drop 8)
+
+-- map f
+
+-- iterate f
