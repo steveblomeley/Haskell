@@ -87,10 +87,14 @@ unfold p h t x | p x       = []
 int2bin :: Int -> [Bit]
 int2bin = unfold (==0) (`mod` 2) (`div` 2)
 
--- chop 8 - which I called stream2bytes
+-- chop 8 (which I called stream2bytes)
 stream2bytes' :: [Bit] -> [[Bit]]
 stream2bytes' = unfold (== []) (take 8) (drop 8)
 
 -- map f
+map'' :: Eq a => (a -> b) -> [a] -> [b]
+map'' f = unfold (== []) (f . head) tail
 
 -- iterate f
+iterate' :: (a -> a) -> a -> [a]
+iterate' f = unfold (\x -> False) f (\x -> x)
