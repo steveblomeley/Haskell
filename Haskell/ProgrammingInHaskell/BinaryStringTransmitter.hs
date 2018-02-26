@@ -29,28 +29,37 @@ int2bin i = i `mod` 2 : int2bin (i `div` 2)
 bits2byte :: [Bit] -> [Bit]
 bits2byte xs = take 8 (xs ++ repeat 0)
 
+addParity :: [Bit] -> [Bit]
+addParity xs = xs ++ [(length $ filter (==0) xs) `mod` 2] 
+
 
 -- (4) Encode string as bytes
 encode :: [Char] -> [Bit]
-encode s = concat [bits2byte $ int2bin $ ord c | c <- s]
+encode s = concat [addParity $ bits2byte $ int2bin $ ord c | c <- s]
 
 -- We can achieve this using composition + map, like this:
 encode' :: [Char] -> [Bit]
-encode' = concat . map (bits2byte . int2bin . ord)
+encode' = concat . map (addParity . bits2byte . int2bin . ord)
 
 
 -- (5) Decode stream of bits string (by doing stream -> bytes -> chars)
+checkParity :: [Bit] -> [Bit]
+checkParity xs = if parityBit == expectedParity then byte else error "bad parity bit"
+                 where byte = take 8 xs 
+                       parityBit = head $ reverse xs
+                       expectedParity = (length $ filter (==0) byte) `mod` 2
+
 decode :: [Bit] -> [Char]
 decode [] = []
-decode bs = (chr $ bin2int $ take 8 bs) : decode (drop 8 bs)
+decode bs = (chr $ bin2int $ checkParity $ take 9 bs) : decode (drop 9 bs)
 
 -- We can decompose this into simpler functions
 stream2bytes :: [Bit] -> [[Bit]]
 stream2bytes [] = []
-stream2bytes s = take 8 s : stream2bytes (drop 8 s)
+stream2bytes s = take 9 s : stream2bytes (drop 9 s)
 
 decode' :: [Bit] -> [Char]
-decode' stream = map (chr . bin2int) (stream2bytes stream)
+decode' stream = map (chr . bin2int . checkParity) (stream2bytes stream)
 
 
 -- (6) Create a mock transmission channel
