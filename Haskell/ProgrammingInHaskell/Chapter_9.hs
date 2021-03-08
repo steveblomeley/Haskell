@@ -85,6 +85,28 @@ ops = [Add,Sub,Mul,Div]
 combine :: Expr -> Expr -> [Expr]
 combine l r = [App o l r | o <- ops]
 
+----------------------------------------------------------------------------------------------------
+-- Performance enhancement
+-- A result type that holds an expression and the result of evaluating it
+type Result = (Expr, Int)
+
+-- Now for a new version of combine, that combines 2 "results" using each available operator
+combine' :: Result -> Result -> [Result]
+combine' (l,x) (r,y) = [(App o l r, apply o x y) | o <- ops, valid o x y]
+
+-- And a results function that gives all possible results whose list of values precisely matches a
+-- given list of Ints
+results :: [Int] -> [Result]
+results [] = []
+results [n] = [(Val n,n)]
+results ns = [r | (lns,rns) <- split ns, l <- results lns, r <- results rns, r <- combine' l r]
+
+-- And a new solutions function using the above
+solutions' :: [Int] -> Int -> [Expr]
+solutions' is t = [e | is' <- allchoices is, (e,n) <- results is', n == t]
+
+----------------------------------------------------------------------------------------------------
+
 -- Can now define a function that generates all possible expressions whose values exactly match a specified list
 exprs :: [Int] -> [Expr]
 exprs [] = []
@@ -97,4 +119,4 @@ solutions :: [Int] -> Int -> [Expr]
 solutions is t = [e | is' <- allchoices is, e <- exprs is', eval e == [t]]
 
 main :: IO()   
-main = print (solutions [1,3,7,10,25,50] 765)
+main = print (solutions' [1,3,7,10,25,50] 765)
