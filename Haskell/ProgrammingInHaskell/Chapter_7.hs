@@ -1,3 +1,6 @@
+import Data.Char
+import Data.List
+
 -- foldr : accumulator func -> seed value -> input list -> result value
 -- simplified version for lists only, instead of foldable
 foldr' :: (a -> b -> b) -> b -> [a] -> b
@@ -5,9 +8,9 @@ foldr' _ v [] = v
 foldr' f v (x:xs) = f x (foldr' f v xs)
 
 -- foldl : (order of params to accumulator func is reversed)
-foldl' :: (b -> a -> b) -> b -> [a] -> b
-foldl' _ v [] = v
-foldl' f v (x:xs) = foldl' f (f v x) xs
+foldl'' :: (b -> a -> b) -> b -> [a] -> b
+foldl'' _ v [] = v
+foldl'' f v (x:xs) = foldl' f (f v x) xs
 
 -- Two example usages of "id"
 
@@ -118,3 +121,63 @@ luhnDouble x =
 luhn :: [Int] -> Bool
 luhn xs = (sum luhned) `mod` 10 == 0
           where luhned = altMap (\x -> x) (\x -> luhnDouble x) (reverse xs)
+
+
+-- First past the post voting
+countcandidate :: Eq a => a -> [a] -> Int
+countcandidate c = length . filter (\c' -> c' == c)
+
+unique :: Eq a => [a] -> [a]
+unique [] = []
+unique (x:xs) = x : unique (filter (\x' -> x' /= x) xs)
+
+countvotes :: Ord a => [a] -> [(Int,a)]
+countvotes vs = sort [(countcandidate c vs, c) | c <- unique vs]
+
+winner :: Ord a => [a] -> a
+winner = snd . last . countvotes
+
+
+-- Alternative vote system
+ballots :: [[String]]
+ballots = [["Red", "Green"],
+           ["Blue"],
+           ["Green", "Red", "Blue"],
+           ["Blue", "Green", "Red"],
+           ["Green"]]
+
+-- Algorithm to decide winner:
+
+-- No single winner, "Red" has fewest first votes, so remove all Red votes, and remove any empty voting lists
+ballots' = [["Green"],
+           ["Blue"],
+           ["Green", "Blue"],
+           ["Blue", "Green"],
+           ["Green"]]
+
+-- No single winner, "Blue" has fewest first votes, so remove all Blue votes, and remove any empty voting lists
+ballots'' = [["Green"],
+           ["Green"],
+           ["Green"],
+           ["Green"]]
+
+-- Green wins
+
+rmempty :: Eq a => [[a]] -> [[a]]
+rmempty = filter (/= [])
+
+rmdups :: Eq a => [a] -> [a]
+rmdups [] = []
+rmdups (x:xs) = x : rmdups (filter (/= x) xs)
+
+elim :: Eq a => a -> [[a]] -> [[a]]
+elim x = map (filter (/= x))
+
+rank :: Ord a => [[a]] -> [a]
+rank = map snd . countvotes . map head 
+
+altvotewinner :: Ord a => [[a]] -> a
+altvotewinner vss = case rank (rmempty vss) of
+                        [c]    -> c
+                        (c:cs) -> altvotewinner (elim c vss)
+          
