@@ -64,6 +64,7 @@ filterDictionary = filterComplexWords lettersInGame . filterShortWords minWordLe
 
 -- Functions to further refine dictionary to only contain words that are valid for a given set of game letters
 -- i.e. words that must contain the first letter of the set, and are composed solely of letters from the set
+-- And to score a single word, and calculate the maximum possible score for a game (based on the filtered dictionary)
 checkWordComposition :: [Char] -> String -> Bool
 checkWordComposition _ [] = True
 checkWordComposition [] _ = False
@@ -74,4 +75,20 @@ checkWordValidity (c:cs) w = elem c w && checkWordComposition (c:cs) w
 
 filterForGame :: [Char] -> Dictionary -> Dictionary
 filterForGame cs = filter (checkWordValidity cs)
+
+score :: String -> Int
+score word = (length word) - minWordLength + 1
+
+maximumScore :: Dictionary -> Int
+maximumScore = sum . map score
+
+-- Determine the reason why a word was not valid - this somewhat replicates the code to filter the dictionary, but
+-- returning a "reason" (String) instead of valid/invalid (Bool) 
+invalidWordReason :: [Char] -> [String] -> String -> String
+invalidWordReason (c:cs) ws w 
+    | length w < minWordLength            = "\"" ++ w ++ "\" is too short - must be minimum " ++ (show minWordLength) ++ " letters."
+    | not (elem c w)                      = "\"" ++ w ++ "\" does not contain the letter \"" ++ (show c) ++ "\""
+    | not (checkWordComposition (c:cs) w) = "You can only pick words composed with the letters \"" ++ (c:cs) ++ "\""
+    | elem w ws                           = "You already guessed that word"
+    | otherwise                           = "ERROR - cannot determine why \"" ++ w ++ "\" is not a valid word."
 
