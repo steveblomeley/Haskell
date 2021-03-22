@@ -14,9 +14,9 @@
 --
 -- At start of game, program uses the 7 letters in play to filter its standard dictionary for valid words
 -- It then calculates the maximum possible score (i.e. if a player guessed all of the possible valid words)
--- After the player plays a valid word, the players score is updated 
+-- After the player enters a valid word, the players score is updated 
 --
--- After each "play", whether entered word is valid or not, the game displays:
+-- After each "play", whether entered word is valid or not, the game re-displays:
 -- - The 7 letters in play (highlighting the mandatory letter)
 -- - Number of valid words played so far
 -- - Player's score - "Score: <a>/<p> points" <- <a> is actual points, <p> is possible points
@@ -32,6 +32,7 @@
 --                you guessed)
 -- :n(ew)         start new game (you'll still be shown list of all possible words before new game starts)
 -- :l(ist)        list all words guessed so far in alphabetical order
+-- :s(huffle)     shuffle & re-display the 7 letters in play
 -- :? or ?h(elp)  list all of these commands
 
 type Dictionary = [String] 
@@ -46,7 +47,7 @@ lettersInGame :: Int
 lettersInGame = 7
 
 -- Functions to refine a dictionary so that it's suitable for input into the game
--- - Remove words that are too short (standard rule is < 4 characters)
+-- - Remove words that are too short (i.e.  < 4 characters)
 -- - Remove words that are too complex (standard rule is words that contain > 7  different characters)
 filterShortWords :: Int -> Dictionary -> Dictionary
 filterShortWords n = filter (\w -> (length w) >= n)
@@ -96,3 +97,10 @@ validatePlayedWord :: Dictionary -> [Char] -> [String] -> String -> Either Strin
 validatePlayedWord dict cs words word 
     | elem word dict && not (elem word words) = Right (score word)
     | otherwise                               = Left (invalidWordReason cs words word) 
+
+-- Test out reading a dictionary file, and filtering it for use in the game
+
+dictionaryTest :: IO ()
+dictionaryTest = do 
+    contents <- readFile "dictionary.txt"
+    print . take 100 . filterDictionary. words $ contents
