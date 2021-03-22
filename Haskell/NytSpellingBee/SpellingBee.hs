@@ -7,7 +7,7 @@
 -- - Contain >4 characters
 -- - Contain at least one occurence of the mandatory letter
 -- - Be comprised entirely from the 7 selected letters
--- - Be present in a dictionary of standard english words
+-- - Be present in a dictionary of standard english words (http://gwicks.net/dictionaries.htm is one source)
 -- - Not be a word that the player has already played
 --
 -- Each valid word is scored - 1 point for 4 letter word, then 1 extra point for each extra letter
@@ -86,9 +86,13 @@ maximumScore = sum . map score
 -- returning a "reason" (String) instead of valid/invalid (Bool) 
 invalidWordReason :: [Char] -> [String] -> String -> String
 invalidWordReason (c:cs) ws w 
-    | length w < minWordLength            = "\"" ++ w ++ "\" is too short - must be minimum " ++ (show minWordLength) ++ " letters."
-    | not (elem c w)                      = "\"" ++ w ++ "\" does not contain the letter \"" ++ (show c) ++ "\""
+    | length w < minWordLength            = "Played word must be minimum of " ++ (show minWordLength) ++ " letters."
+    | not (elem c w)                      = "Played word must contain the letter \"" ++ (show c) ++ "\""
     | not (checkWordComposition (c:cs) w) = "You can only pick words composed with the letters \"" ++ (c:cs) ++ "\""
     | elem w ws                           = "You already guessed that word"
     | otherwise                           = "ERROR - cannot determine why \"" ++ w ++ "\" is not a valid word."
 
+validatePlayedWord :: Dictionary -> [Char] -> [String] -> String -> Either String Int
+validatePlayedWord dict cs words word 
+    | elem word dict && not (elem word words) = Right (score word)
+    | otherwise                               = Left (invalidWordReason cs words word) 
