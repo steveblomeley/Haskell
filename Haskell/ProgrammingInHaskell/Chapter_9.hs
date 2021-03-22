@@ -45,6 +45,10 @@ eval (Val n) = [n | n > 0]
 eval (App op l r) = [apply op x y | x <- eval l, y <- eval r, valid op x y]
 
 -- Return all subsequences of a sequence
+-- so subs []      -> [[]]
+--    subs [3]     -> [[], [3]]
+--    subs [2,3]   -> [[], [3], [2], [2,3]]
+--    subs [1,2,3] -> [[], [3], [2], [2,3], [1], [1,3], [1,2], [1,2,3]]
 subs :: [a] -> [[a]]
 subs [] = [[]]
 subs (x:xs) = yss ++ map (x:) yss
@@ -52,11 +56,16 @@ subs (x:xs) = yss ++ map (x:) yss
                   yss = subs xs
 
 -- Interleave a new member into every possible position of a sequence
+-- so interleave 3 -> []    -> [                      [3]]
+--    interleave 3 -> [2]   -> [           [3,2],   [2,3]]
+--    interleave 3 -> [1,2] -> [[3,1,2], [1,3,2], [1,2,3]]
 interleave :: a -> [a] -> [[a]]
 interleave x [] = [[x]]
 interleave x (y:ys) = (x:y:ys) : map (y:) (interleave x ys)
 
 -- All permutations of a list
+-- so perms []  -> []
+--    perms [3] -> 
 perms :: [a] -> [[a]]
 perms [] = [[]]
 perms (x:xs) = concat (map (interleave x) (perms xs))
@@ -65,6 +74,10 @@ perms (x:xs) = concat (map (interleave x) (perms xs))
 -- In other words, all permutations of all sub-sequences
 allchoices :: [a] -> [[a]]
 allchoices = concat . map perms . subs
+
+-- Exercise 1. Version of allchoices using a list comprehension
+allchoices' :: [a] -> [[a]]
+allchoices' xs = [xss | xs' <- subs xs, xss <- perms xs']
 
 -- Now can decide if an expression is a solution for a given set of inputs and a target
 -- (recall that our evaluate method returns a sequence!)
@@ -120,3 +133,24 @@ solutions is t = [e | is' <- allchoices is, e <- exprs is', eval e == [t]]
 
 main :: IO()   
 main = print (solutions' [1,3,7,10,25,50] 765)
+
+-- Exercise 2.
+-- Define a function isChoice that decides if one list is chosen from another
+-- Hint: first define a function that removes the first occurence of an element from a list
+remFirst :: Eq a => a -> [a] -> [a]
+remFirst _ [] = []
+remFirst x (y:ys) | x == y = ys
+                  | otherwise = y : remFirst x ys
+
+isChoice :: Eq a => [a] -> [a] -> Bool
+isChoice [] _ = True
+isChoice (x:xs) ys = elem x ys && isChoice xs (remFirst x ys)
+
+-- Exercise 3. 
+-- How many "candidate" expressions can be generated from an input list?
+-- How many of those are actually valid expressions?
+candidateExprs :: [Int] -> Int
+candidateExprs ns = length [e | ns' <- allchoices ns, e <- exprs ns', eval e /= []]
+
+
+
