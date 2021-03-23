@@ -68,9 +68,7 @@ filterDictionary = filterComplexWords lettersInGame . filterShortWords minWordLe
 -- i.e. words that must contain the first letter of the set, and are composed solely of letters from the set
 -- And to score a single word, and calculate the maximum possible score for a game (based on the filtered dictionary)
 checkWordComposition :: [Char] -> String -> Bool
-checkWordComposition _ [] = True
-checkWordComposition [] _ = False
-checkWordComposition (c:cs) w = checkWordComposition cs (filter (/= c) w) 
+checkWordComposition cs w = null (w `minus` cs)
 
 checkWordValidity :: [Char] -> String -> Bool
 checkWordValidity (c:cs) w = elem c w && checkWordComposition (c:cs) w
@@ -99,21 +97,34 @@ validatePlayedWord dict cs words word
     | elem word dict && not (elem word words) = Right (score word)
     | otherwise                               = Left (invalidWordReason cs words word) 
 
--- Test out reading a dictionary file, and filtering it for use in the game
-
-dictionaryTest :: IO ()
-dictionaryTest = do 
-    contents <- readFile "dictionary.txt"
-    let dict = filterForGame "dkogmew" . filterDictionary . words $ contents
-    print dict
-    print (maximumScore dict)
-
 -- Pick 7 letters for a game
--- This needs refinement to ensure that at least one vowel is always picked
+-- Still need to consider how to select and identify one letter as being mandatory
 randomLetters :: [Char] -> Int -> IO [Char]
 randomLetters _ 0  = return []
 randomLetters cs n = do
-    i <- randomRIO (0, (length cs) -1)
+    i <- randomRIO (0, (length cs) - 1)
     let x = cs !! i
     xs <- randomLetters (filter (/= x) cs) (n-1)
     return (x : xs)
+
+minus :: (Eq a) => [a] -> [a] -> [a]
+minus [] _                 = []
+minus (y:ys) xs | elem y xs = minus ys xs
+                | otherwise = y : (minus ys xs)
+
+lettersForGame :: IO [Char]
+lettersForGame = do
+    c <- randomLetters ['a','e','i','o','u'] 1
+    let xs = ['a'..'z'] `minus` c
+    cs <- randomLetters xs (lettersInGame - 1)
+    return (c ++ cs)
+
+-- Read a dictionary file, select 7 letters, use them to filter and score the dictionary
+dictionaryTest :: IO ()
+dictionaryTest = do 
+    contents <- readFile "dictionary.txt"
+    letters <- lettersForGame
+    let dict = filterForGame letters . filterDictionary . words $ contents
+    print letters
+    print dict
+    print (maximumScore dict)
