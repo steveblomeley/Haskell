@@ -37,6 +37,7 @@
 import System.Random
 
 type Dictionary = [String] 
+type Letters = ([Char],Char)
 
 dict :: Dictionary
 dict = ["right","said","fred","have","a","cup","of","coffee","or","tea","disenfranchise","tautology"] 
@@ -70,11 +71,11 @@ filterDictionary = filterComplexWords lettersInGame . filterShortWords minWordLe
 checkWordComposition :: [Char] -> String -> Bool
 checkWordComposition cs w = null (w `minus` cs)
 
-checkWordValidity :: [Char] -> String -> Bool
-checkWordValidity (c:cs) w = elem c w && checkWordComposition (c:cs) w
+checkWordValidity :: Letters -> String -> Bool
+checkWordValidity (ls,l) w = elem l w && checkWordComposition ls w
 
-filterForGame :: [Char] -> Dictionary -> Dictionary
-filterForGame cs = filter (checkWordValidity cs)
+filterForGame :: Letters -> Dictionary -> Dictionary
+filterForGame ls = filter (checkWordValidity ls)
 
 score :: String -> Int
 score word = (length word) - minWordLength + 1
@@ -84,21 +85,20 @@ maximumScore = sum . map score
 
 -- Determine the reason why a word was not valid - this somewhat replicates the code to filter the dictionary, but
 -- returning a "reason" (String) instead of valid/invalid (Bool) 
-invalidWordReason :: [Char] -> [String] -> String -> String
-invalidWordReason (c:cs) ws w 
-    | length w < minWordLength            = "Played word must be minimum of " ++ (show minWordLength) ++ " letters."
-    | not (elem c w)                      = "Played word must contain the letter \"" ++ (show c) ++ "\""
-    | not (checkWordComposition (c:cs) w) = "You can only pick words composed with the letters \"" ++ (c:cs) ++ "\""
-    | elem w ws                           = "You already guessed that word"
-    | otherwise                           = "ERROR - cannot determine why \"" ++ w ++ "\" is not a valid word."
+invalidWordReason :: Letters -> [String] -> String -> String
+invalidWordReason (ls,l) ws w 
+    | length w < minWordLength        = "Played word must be minimum of " ++ (show minWordLength) ++ " letters."
+    | not (elem l w)                  = "Played word must contain the letter \"" ++ (show l) ++ "\""
+    | not (checkWordComposition ls w) = "You can only pick words composed with the letters \"" ++ ls ++ "\""
+    | elem w ws                       = "You already guessed that word"
+    | otherwise                       = "ERROR - cannot determine why \"" ++ w ++ "\" is not a valid word."
 
-validatePlayedWord :: Dictionary -> [Char] -> [String] -> String -> Either String Int
-validatePlayedWord dict cs words word 
+validatePlayedWord :: Dictionary -> Letters -> [String] -> String -> Either String Int
+validatePlayedWord dict letters words word 
     | elem word dict && not (elem word words) = Right (score word)
-    | otherwise                               = Left (invalidWordReason cs words word) 
+    | otherwise                               = Left (invalidWordReason letters words word) 
 
--- Pick 7 letters for a game
--- Still need to consider how to select and identify one letter as being mandatory
+-- Functions to pick letters for game, and to identify one letter as mandatory
 randomLetters :: [Char] -> Int -> IO [Char]
 randomLetters _ 0  = return []
 randomLetters cs n = do
@@ -112,17 +112,18 @@ minus [] _                 = []
 minus (y:ys) xs | elem y xs = minus ys xs
                 | otherwise = y : (minus ys xs)
 
-lettersForGame :: IO [Char]
+lettersForGame :: IO Letters
 lettersForGame = do
-    c <- randomLetters ['a','e','i','o','u'] 1
-    let xs = ['a'..'z'] `minus` c
-    cs <- randomLetters xs (lettersInGame - 1)
-    return (c ++ cs)
+    (c:_) <- randomLetters ['a','e','i','o','u'] 1
+    cs <- randomLetters (['a'..'z'] `minus` [c]) (lettersInGame - 1)
+    let letters = c:cs
+    (l:_) <- randomLetters letters 1
+    return (letters,l)
 
 -- Read a dictionary file, select 7 letters, use them to filter and score the dictionary
 dictionaryTest :: IO ()
 dictionaryTest = do 
-    contents <- readFile "dictionary.txt"
+    contents <- readFile "english3.txt"
     letters <- lettersForGame
     let dict = filterForGame letters . filterDictionary . words $ contents
     print letters
