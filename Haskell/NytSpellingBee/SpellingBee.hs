@@ -118,11 +118,17 @@ lettersForGame = do
     return (letters,l)
 
 -- Read a dictionary file, select 7 letters, use them to filter and score the dictionary
+-- Could apply some rules to enhance this process, e.g. 
+-- - Ensure that a 'u' is selected if a 'q' is selected
+-- - Discard the letters and retry if max possible score is below some arbitrary value.
+-- - Don't allow least frquently used letters to be mandatory (e.g. q, x, z?)
+-- - Apply some weighting to selected letters - so more frequently used letters are more
+--   likely to be selected (an inverse "Scrabble score" weighting)
 dictionaryTest :: IO ()
 dictionaryTest = do 
-    contents <- readFile "english3.txt"
+    fullDict <- readFile "english3.txt"
     letters <- lettersForGame
-    let dict = filterForGame letters . filterDictionary . words $ contents
+    let gameDict = filterForGame letters . filterDictionary . words $ fullDict
     print letters
-    print dict
-    print (maximumScore dict)
+    print gameDict
+    print (maximumScore gameDict)
