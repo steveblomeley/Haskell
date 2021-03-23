@@ -39,9 +39,6 @@ import System.Random
 type Dictionary = [String] 
 type Letters = ([Char],Char)
 
-dict :: Dictionary
-dict = ["right","said","fred","have","a","cup","of","coffee","or","tea","disenfranchise","tautology"] 
-
 minWordLength :: Int
 minWordLength = 4
 
