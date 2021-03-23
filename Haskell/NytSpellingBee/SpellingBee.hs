@@ -103,4 +103,6 @@ validatePlayedWord dict cs words word
 dictionaryTest :: IO ()
 dictionaryTest = do 
     contents <- readFile "dictionary.txt"
-    print . take 100 . filterDictionary. words $ contents
+    let dict = filterForGame "dkogmew" . filterDictionary . words $ contents
+    print dict
+    print (maximumScore dict)
