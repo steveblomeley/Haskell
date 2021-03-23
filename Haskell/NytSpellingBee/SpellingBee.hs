@@ -34,6 +34,7 @@
 -- :l(ist)        list all words guessed so far in alphabetical order
 -- :s(huffle)     shuffle & re-display the 7 letters in play
 -- :? or ?h(elp)  list all of these commands
+import System.Random
 
 type Dictionary = [String] 
 
@@ -106,3 +107,13 @@ dictionaryTest = do
     let dict = filterForGame "dkogmew" . filterDictionary . words $ contents
     print dict
     print (maximumScore dict)
+
+-- Pick 7 letters for a game
+-- This needs refinement to ensure that at least one vowel is always picked
+randomLetters :: [Char] -> Int -> IO [Char]
+randomLetters _ 0  = return []
+randomLetters cs n = do
+    i <- randomRIO (0, (length cs) -1)
+    let x = cs !! i
+    xs <- randomLetters (filter (/= x) cs) (n-1)
+    return (x : xs)
