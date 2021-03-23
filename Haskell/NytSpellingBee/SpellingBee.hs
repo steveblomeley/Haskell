@@ -1,5 +1,11 @@
 -- Command line game based on the New York Times Spelling Bee
 --
+-- ============================================================================================================
+-- NOTE!!! This program imports System.Random 
+-- So dirty fix to run in GHCi is to run: "stack ghci --package random"
+-- Need to investigate how to create a proper build file so that this process is done automatically
+-- ============================================================================================================
+--
 -- Program selects 7 random letters (must include >0 and <4 vowels)
 -- One letter is nominated to be mandatory, i.e. must be present in every word played
 --
@@ -34,6 +40,7 @@
 -- :l(ist)        list all words guessed so far in alphabetical order
 -- :s(huffle)     shuffle & re-display the 7 letters in play
 -- :? or ?h(elp)  list all of these commands
+
 import System.Random
 
 type Dictionary = [String] 
@@ -44,6 +51,14 @@ minWordLength = 4
 
 lettersInGame :: Int
 lettersInGame = 7
+
+-- These are the weightings used in Scrabble - i.e. the numbers of each letter in a standard
+-- Scrabble set
+letterWeightings :: [Int]
+letterWeightings = [9,2,2,4,12,2,3,2,9,1,1,4,2,6,8,2,1,6,4,6,4,2,2,1,2,1]
+
+vowelWeightings :: [Int]
+vowelWeightings = [9,12,9,8,4]
 
 -- Functions to refine a dictionary so that it's suitable for input into the game
 -- - Remove words that are too short (i.e.  < 4 characters)
@@ -109,10 +124,14 @@ minus [] _                 = []
 minus (y:ys) xs | elem y xs = minus ys xs
                 | otherwise = y : (minus ys xs)
 
+weightBy :: [Int] -> [a] -> [a]
+weightBy ws = concat . zipWith replicate ws
+
 lettersForGame :: IO Letters
 lettersForGame = do
-    (c:_) <- randomLetters ['a','e','i','o','u'] 1
-    cs <- randomLetters (['a'..'z'] `minus` [c]) (lettersInGame - 1)
+    (c:_) <- randomLetters (weightBy vowelWeightings ['a','e','i','o','u']) 1
+    let remainingLetters = (weightBy letterWeightings ['a'..'z']) `minus` [c]
+    cs <- randomLetters remainingLetters (lettersInGame - 1)
     let letters = c:cs
     (l:_) <- randomLetters letters 1
     return (letters,l)
@@ -121,12 +140,12 @@ lettersForGame = do
 -- Could apply some rules to enhance this process, e.g. 
 -- - Ensure that a 'u' is selected if a 'q' is selected
 -- - Discard the letters and retry if max possible score is below some arbitrary value.
--- - Don't allow least frquently used letters to be mandatory (e.g. q, x, z?)
+-- - Don't allow least frequently used letters to be mandatory (e.g. q, x, z?)
 -- - Apply some weighting to selected letters - so more frequently used letters are more
 --   likely to be selected (an inverse "Scrabble score" weighting)
 dictionaryTest :: IO ()
 dictionaryTest = do 
-    fullDict <- readFile "english3.txt"
+    fullDict <- readFile "dictionary.txt"
     letters <- lettersForGame
     let gameDict = filterForGame letters . filterDictionary . words $ fullDict
     print letters
