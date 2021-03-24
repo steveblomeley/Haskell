@@ -57,8 +57,14 @@ lettersInGame = 7
 letterWeightings :: [Int]
 letterWeightings = [9,2,2,4,12,2,3,2,9,1,1,4,2,6,8,2,1,6,4,6,4,2,2,1,2,1]
 
+weightedLetters :: [Char]
+weightedLetters = weightBy letterWeightings ['a'..'z']
+
 vowelWeightings :: [Int]
 vowelWeightings = [9,12,9,8,4]
+
+weightedVowels :: [Char]
+weightedVowels = weightBy vowelWeightings ['a','e','i','o','u']
 
 -- Functions to refine a dictionary so that it's suitable for input into the game
 -- - Remove words that are too short (i.e.  < 4 characters)
@@ -129,11 +135,10 @@ weightBy ws = concat . zipWith replicate ws
 
 lettersForGame :: IO Letters
 lettersForGame = do
-    (c:_) <- randomLetters (weightBy vowelWeightings ['a','e','i','o','u']) 1
-    let remainingLetters = (weightBy letterWeightings ['a'..'z']) `minus` [c]
-    cs <- randomLetters remainingLetters (lettersInGame - 1)
+    (c:_) <- randomLetters weightedVowels 1
+    cs <- randomLetters (weightedLetters `minus` [c]) (lettersInGame - 1)
     let letters = c:cs
-    (l:_) <- randomLetters letters 1
+    (l:_) <- randomLetters (letters `minus` ['q','x','z']) 1
     return (letters,l)
 
 -- Read a dictionary file, select 7 letters, use them to filter and score the dictionary
@@ -141,8 +146,8 @@ lettersForGame = do
 -- - Ensure that a 'u' is selected if a 'q' is selected
 -- - Discard the letters and retry if max possible score is below some arbitrary value.
 -- - Don't allow least frequently used letters to be mandatory (e.g. q, x, z?)
--- - Apply some weighting to selected letters - so more frequently used letters are more
---   likely to be selected (an inverse "Scrabble score" weighting)
+-- - DONE: Apply some weighting to selected letters - so more frequently used letters are more
+--   likely to be selected (a "Scrabble tiles" weighting)
 dictionaryTest :: IO ()
 dictionaryTest = do 
     fullDict <- readFile "dictionary.txt"
