@@ -60,11 +60,8 @@ letterWeightings = [9,2,2,4,12,2,3,2,9,1,1,4,2,6,8,2,1,6,4,6,4,2,2,1,2,1]
 weightedLetters :: [Char]
 weightedLetters = weightBy letterWeightings ['a'..'z']
 
-vowelWeightings :: [Int]
-vowelWeightings = [9,12,9,8,4]
-
 weightedVowels :: [Char]
-weightedVowels = weightBy vowelWeightings ['a','e','i','o','u']
+weightedVowels = filter (\x -> elem x ['a','e','i','o','u']) weightedLetters
 
 -- Functions to refine a dictionary so that it's suitable for input into the game
 -- - Remove words that are too short (i.e.  < 4 characters)
