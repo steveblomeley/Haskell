@@ -86,17 +86,17 @@ filterDictionary = filterComplexWords lettersInGame . filterShortWords minWordLe
 checkWordComposition :: [Char] -> String -> Bool
 checkWordComposition cs w = null (w `minus` cs)
 
-checkWordValidity :: Letters -> String -> Bool
-checkWordValidity (ls,l) w = elem l w && checkWordComposition ls w
+validWord :: Letters -> String -> Bool
+validWord (ls,l) w = elem l w && checkWordComposition ls w
 
 filterForGame :: Letters -> Dictionary -> Dictionary
-filterForGame ls = filter (checkWordValidity ls)
+filterForGame ls = filter (validWord ls)
 
 score :: String -> Int
 score word = (length word) - minWordLength + 1
 
-maximumScore :: Dictionary -> Int
-maximumScore = sum . map score
+totalScore :: [String] -> Int
+totalScore = sum . map score
 
 -- Determine the reason why a word was not valid - this somewhat replicates the code to filter the dictionary, but
 -- returning a "reason" (String) instead of valid/invalid (Bool) 
@@ -152,4 +152,29 @@ dictionaryTest = do
     let gameDict = filterForGame letters . filterDictionary . words $ fullDict
     print letters
     print gameDict
-    print (maximumScore gameDict)
+    print (totalScore gameDict)
+
+printStatus :: Letters -> Dictionary -> [String] -> IO ()
+printStatus (ls,l) dict ws = do
+    print ("Your letters: " ++ ls ++ " - all words must include letter " ++ (show l))
+    print ("Your score: " ++ show (totalScore ws) ++ " (total available: " ++ show (totalScore dict) ++ ")")
+
+play :: Letters -> Dictionary -> [String] -> IO ()
+play letters dict words = do
+    printStatus letters dict words
+    putStr "\nEnter a word: "
+    w <- getLine
+    if elem w dict && not (elem w words) then
+        do putStrLn ("Good word! Score = " ++ show (score w))
+           play letters dict (w:words)
+    else
+        do
+            putStrLn (invalidWordReason letters words w)
+            play letters dict words
+
+spellingBeeGame :: IO ()
+spellingBeeGame = do    
+    fullDict <- readFile "dictionary.txt"
+    letters <- lettersForGame
+    let gameDict = filterForGame letters . filterDictionary . words $ fullDict
+    play letters gameDict []
