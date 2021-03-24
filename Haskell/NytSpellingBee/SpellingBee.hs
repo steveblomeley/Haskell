@@ -43,7 +43,7 @@
 -- :q(uit)        quit the game - you'll be shown a list of all possible words (nice to have - highlight the ones
 --                you guessed)
 -- :n(ew)         start new game (you'll still be shown list of all possible words before new game starts)
--- :l(ist)        list all words guessed so far in alphabetical order
+-- :w(ords)       list all words guessed so far in alphabetical order
 -- :s(huffle)     shuffle & re-display the 7 letters in play
 -- :? or ?h(elp)  list all of these commands
 
@@ -107,7 +107,7 @@ totalScore = sum . map score
 
 -- Determine the reason why a word was not valid - this somewhat replicates the code to filter the dictionary, but
 -- returning a "reason" (String) instead of valid/invalid (Bool) 
-data WordResult = Quit | Words | Valid Int | NotValid String
+data WordResult = Quit | Words | Shuffle | Valid Int | NotValid String
 
 invalidWordReason :: Dictionary -> Letters -> [String] -> String -> String
 invalidWordReason d (ls,l) ws w 
@@ -122,6 +122,7 @@ validatePlayedWord :: Dictionary -> Letters -> [String] -> String -> WordResult
 validatePlayedWord dict letters words word 
     | word == ":q"                            = Quit
     | word == ":w"                            = Words
+    | word == ":s"                            = Shuffle
     | elem word dict && not (elem word words) = Valid (score word)
     | otherwise                               = NotValid (invalidWordReason dict letters words word) 
 
@@ -149,6 +150,11 @@ lettersForGame = do
     let letters = c:cs
     (l:_) <- randomLetters (letters `minus` ['q','x','z']) 1
     return (letters,l)
+
+shuffle :: Letters -> IO Letters
+shuffle (ls,l) = do
+    shuffled <- randomLetters ls (length ls)
+    return (shuffled,l)
 
 -- Read a dictionary file, select 7 letters, use them to filter and score the dictionary
 dictionaryTest :: IO ()
@@ -182,6 +188,9 @@ play letters dict words = do
             putStrLn "Words played so far:"
             print (sort words) 
             play letters dict words
+        Shuffle -> do
+            shuffled <- shuffle letters
+            play shuffled dict words
         Quit -> do
             print (sort words)
             putStrLn "Possible words:"
