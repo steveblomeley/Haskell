@@ -157,6 +157,7 @@ shuffle (ls,l) = do
     return (shuffled,l)
 
 -- Read a dictionary file, select 7 letters, use them to filter and score the dictionary
+-- This can be used to evaluate alternative dictionaries
 dictionaryTest :: IO ()
 dictionaryTest = do 
     fullDict <- readFile "dictionary.txt"
