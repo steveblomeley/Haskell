@@ -11,9 +11,9 @@
 -- Could enhance this process, e.g. 
 -- - Ensure that a 'u' is selected if a 'q' is selected
 -- - Discard the letters and retry if max possible score is below some arbitrary value.
--- - Don't allow least frequently used letters to be mandatory (e.g. q, x, z?)
+-- - DONE: Don't allow least frequently used letters to be mandatory (e.g. q, x, z?)
 -- - DONE: Apply some weighting to selected letters - so more frequently used letters are more
---   likely to be selected (a "Scrabble tiles" weighting)
+--         likely to be selected (a "Scrabble tiles" weighting)
 --
 -- The player enters words - to be valid, a word must:
 -- - Contain >4 characters
@@ -104,6 +104,8 @@ score word = (length word) - minWordLength + 1
 totalScore :: [String] -> Int
 totalScore = sum . map score
 
+data WordResult = Quit | Valid Int | NotValid String
+
 -- Determine the reason why a word was not valid - this somewhat replicates the code to filter the dictionary, but
 -- returning a "reason" (String) instead of valid/invalid (Bool) 
 invalidWordReason :: Letters -> Dictionary -> [String] -> String -> String
@@ -115,10 +117,11 @@ invalidWordReason (ls,l) d ws w
     | not (elem w d)                  = "That word is not in the dictionary"
     | otherwise                       = "ERROR - cannot determine why \"" ++ w ++ "\" is not a valid word."
 
-validatePlayedWord :: Dictionary -> Letters -> [String] -> String -> Either String Int
+validatePlayedWord :: Dictionary -> Letters -> [String] -> String -> WordResult
 validatePlayedWord dict letters words word 
-    | elem word dict && not (elem word words) = Right (score word)
-    | otherwise                               = Left (invalidWordReason letters dict words word) 
+    | word == ":q"                            = Quit
+    | elem word dict && not (elem word words) = Valid (score word)
+    | otherwise                               = NotValid (invalidWordReason letters dict words word) 
 
 -- Functions to pick letters for game, and to identify one letter as mandatory
 randomLetters :: [Char] -> Int -> IO [Char]
@@ -167,12 +170,16 @@ play letters dict words = do
     putStr "\nEnter a word: "
     w <- getLine
     case validatePlayedWord dict letters words w of
-        Right wordScore -> do
+        Valid wordScore -> do
             putStrLn ("Good word! Score = " ++ show (wordScore))
             play letters dict (w:words)
-        Left error -> do
-            putStrLn error
+        NotValid reason -> do
+            putStrLn reason
             play letters dict words
+        Quit -> do
+            putStrLn "Possible words:"
+            print dict
+            putStrLn "\nBye!"
 
 spellingBeeGame :: IO ()
 spellingBeeGame = do    
