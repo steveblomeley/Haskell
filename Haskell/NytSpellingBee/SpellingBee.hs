@@ -8,6 +8,12 @@
 --
 -- Program selects 7 random letters (must include >0 and <4 vowels)
 -- One letter is nominated to be mandatory, i.e. must be present in every word played
+-- Could enhance this process, e.g. 
+-- - Ensure that a 'u' is selected if a 'q' is selected
+-- - Discard the letters and retry if max possible score is below some arbitrary value.
+-- - Don't allow least frequently used letters to be mandatory (e.g. q, x, z?)
+-- - DONE: Apply some weighting to selected letters - so more frequently used letters are more
+--   likely to be selected (a "Scrabble tiles" weighting)
 --
 -- The player enters words - to be valid, a word must:
 -- - Contain >4 characters
@@ -16,7 +22,7 @@
 -- - Be present in a dictionary of standard english words (http://gwicks.net/dictionaries.htm is one source)
 -- - Not be a word that the player has already played
 --
--- Each valid word is scored - 1 point for 4 letter word, then 1 extra point for each extra letter
+-- Each valid word is scored - 1 point for 4 letter word, + 1 extra point for each extra letter
 --
 -- At start of game, program uses the 7 letters in play to filter its standard dictionary for valid words
 -- It then calculates the maximum possible score (i.e. if a player guessed all of the possible valid words)
@@ -100,18 +106,19 @@ totalScore = sum . map score
 
 -- Determine the reason why a word was not valid - this somewhat replicates the code to filter the dictionary, but
 -- returning a "reason" (String) instead of valid/invalid (Bool) 
-invalidWordReason :: Letters -> [String] -> String -> String
-invalidWordReason (ls,l) ws w 
-    | length w < minWordLength        = "Played word must be minimum of " ++ (show minWordLength) ++ " letters."
-    | not (elem l w)                  = "Played word must contain the letter \"" ++ (show l) ++ "\""
-    | not (checkWordComposition ls w) = "You can only pick words composed with the letters \"" ++ ls ++ "\""
+invalidWordReason :: Letters -> Dictionary -> [String] -> String -> String
+invalidWordReason (ls,l) d ws w 
+    | length w < minWordLength        = "Too short! Words must be at least " ++ (show minWordLength) ++ " letters"
+    | not (elem l w)                  = "All words must contain the letter \"" ++ (show l) ++ "\""
+    | not (checkWordComposition ls w) = "Only words containing the letters \"" ++ ls ++ "\" are valid"
     | elem w ws                       = "You already guessed that word"
+    | not (elem w d)                  = "That word is not in the dictionary"
     | otherwise                       = "ERROR - cannot determine why \"" ++ w ++ "\" is not a valid word."
 
 validatePlayedWord :: Dictionary -> Letters -> [String] -> String -> Either String Int
 validatePlayedWord dict letters words word 
     | elem word dict && not (elem word words) = Right (score word)
-    | otherwise                               = Left (invalidWordReason letters words word) 
+    | otherwise                               = Left (invalidWordReason letters dict words word) 
 
 -- Functions to pick letters for game, and to identify one letter as mandatory
 randomLetters :: [Char] -> Int -> IO [Char]
@@ -139,12 +146,6 @@ lettersForGame = do
     return (letters,l)
 
 -- Read a dictionary file, select 7 letters, use them to filter and score the dictionary
--- Could apply some rules to enhance this process, e.g. 
--- - Ensure that a 'u' is selected if a 'q' is selected
--- - Discard the letters and retry if max possible score is below some arbitrary value.
--- - Don't allow least frequently used letters to be mandatory (e.g. q, x, z?)
--- - DONE: Apply some weighting to selected letters - so more frequently used letters are more
---   likely to be selected (a "Scrabble tiles" weighting)
 dictionaryTest :: IO ()
 dictionaryTest = do 
     fullDict <- readFile "dictionary.txt"
@@ -154,10 +155,11 @@ dictionaryTest = do
     print gameDict
     print (totalScore gameDict)
 
+-- Play the game    
 printStatus :: Letters -> Dictionary -> [String] -> IO ()
 printStatus (ls,l) dict ws = do
-    print ("Your letters: " ++ ls ++ " - all words must include letter " ++ (show l))
-    print ("Your score: " ++ show (totalScore ws) ++ " (total available: " ++ show (totalScore dict) ++ ")")
+    putStrLn ("Your letters: " ++ ls ++ " - all words must include letter " ++ (show l))
+    putStrLn ("Your score: " ++ show (totalScore ws) ++ " (total available: " ++ show (totalScore dict) ++ ")")
 
 play :: Letters -> Dictionary -> [String] -> IO ()
 play letters dict words = do
@@ -169,7 +171,7 @@ play letters dict words = do
            play letters dict (w:words)
     else
         do
-            putStrLn (invalidWordReason letters words w)
+            putStrLn (invalidWordReason letters dict words w)
             play letters dict words
 
 spellingBeeGame :: IO ()
