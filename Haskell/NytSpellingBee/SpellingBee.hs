@@ -166,12 +166,12 @@ play letters dict words = do
     printStatus letters dict words
     putStr "\nEnter a word: "
     w <- getLine
-    if elem w dict && not (elem w words) then
-        do putStrLn ("Good word! Score = " ++ show (score w))
-           play letters dict (w:words)
-    else
-        do
-            putStrLn (invalidWordReason letters dict words w)
+    case validatePlayedWord dict letters words w of
+        Right wordScore -> do
+            putStrLn ("Good word! Score = " ++ show (wordScore))
+            play letters dict (w:words)
+        Left error -> do
+            putStrLn error
             play letters dict words
 
 spellingBeeGame :: IO ()
