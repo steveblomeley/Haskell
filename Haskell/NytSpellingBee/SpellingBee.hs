@@ -48,6 +48,7 @@
 -- :? or ?h(elp)  list all of these commands
 
 import System.Random
+import Data.List
 
 type Dictionary = [String] 
 type Letters = ([Char],Char)
@@ -104,12 +105,12 @@ score word = (length word) - minWordLength + 1
 totalScore :: [String] -> Int
 totalScore = sum . map score
 
-data WordResult = Quit | Valid Int | NotValid String
-
 -- Determine the reason why a word was not valid - this somewhat replicates the code to filter the dictionary, but
 -- returning a "reason" (String) instead of valid/invalid (Bool) 
-invalidWordReason :: Letters -> Dictionary -> [String] -> String -> String
-invalidWordReason (ls,l) d ws w 
+data WordResult = Quit | Words | Valid Int | NotValid String
+
+invalidWordReason :: Dictionary -> Letters -> [String] -> String -> String
+invalidWordReason d (ls,l) ws w 
     | length w < minWordLength        = "Too short! Words must be at least " ++ (show minWordLength) ++ " letters"
     | not (elem l w)                  = "All words must contain the letter \"" ++ (show l) ++ "\""
     | not (checkWordComposition ls w) = "Only words containing the letters \"" ++ ls ++ "\" are valid"
@@ -120,8 +121,9 @@ invalidWordReason (ls,l) d ws w
 validatePlayedWord :: Dictionary -> Letters -> [String] -> String -> WordResult
 validatePlayedWord dict letters words word 
     | word == ":q"                            = Quit
+    | word == ":w"                            = Words
     | elem word dict && not (elem word words) = Valid (score word)
-    | otherwise                               = NotValid (invalidWordReason letters dict words word) 
+    | otherwise                               = NotValid (invalidWordReason dict letters words word) 
 
 -- Functions to pick letters for game, and to identify one letter as mandatory
 randomLetters :: [Char] -> Int -> IO [Char]
@@ -176,7 +178,12 @@ play letters dict words = do
         NotValid reason -> do
             putStrLn reason
             play letters dict words
+        Words -> do
+            putStrLn "Words played so far:"
+            print (sort words) 
+            play letters dict words
         Quit -> do
+            print (sort words)
             putStrLn "Possible words:"
             print dict
             putStrLn "\nBye!"
