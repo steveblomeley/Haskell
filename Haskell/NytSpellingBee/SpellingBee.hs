@@ -109,10 +109,10 @@ totalScore = sum . map score
 -- returning a "reason" (String) instead of valid/invalid (Bool) 
 data WordResult = Quit | Words | Shuffle | Valid Int | NotValid String
 
-invalidWordReason :: Dictionary -> Letters -> [String] -> String -> String
-invalidWordReason d (ls,l) ws w 
+notValidReason :: Dictionary -> Letters -> [String] -> String -> String
+notValidReason d (ls,l) ws w 
     | length w < minWordLength        = "Too short! Words must be at least " ++ (show minWordLength) ++ " letters"
-    | not (elem l w)                  = "All words must contain the letter \"" ++ (show l) ++ "\""
+    | not (elem l w)                  = "All words must contain the letter " ++ (show l)
     | not (checkWordComposition ls w) = "Only words containing the letters \"" ++ ls ++ "\" are valid"
     | elem w ws                       = "You already guessed that word"
     | not (elem w d)                  = "That word is not in the dictionary"
@@ -124,7 +124,7 @@ validatePlayedWord dict letters words word
     | word == ":w"                            = Words
     | word == ":s"                            = Shuffle
     | elem word dict && not (elem word words) = Valid (score word)
-    | otherwise                               = NotValid (invalidWordReason dict letters words word) 
+    | otherwise                               = NotValid (notValidReason dict letters words word) 
 
 -- Functions to pick letters for game, and to identify one letter as mandatory
 randomLetters :: [Char] -> Int -> IO [Char]
