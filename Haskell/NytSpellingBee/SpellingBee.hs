@@ -107,7 +107,7 @@ totalScore = sum . map score
 
 -- Determine the reason why a word was not valid - this somewhat replicates the code to filter the dictionary, but
 -- returning a "reason" (String) instead of valid/invalid (Bool) 
-data WordResult = Quit | Words | Shuffle | Valid Int | NotValid String
+data WordResult = Quit | Words | Shuffle | Help | Valid Int | NotValid String
 
 notValidReason :: Dictionary -> Letters -> [String] -> String -> String
 notValidReason d (ls,l) ws w 
@@ -123,6 +123,7 @@ validatePlayedWord dict letters words word
     | word == ":q"                            = Quit
     | word == ":w"                            = Words
     | word == ":s"                            = Shuffle
+    | word == ":h"                            = Help
     | elem word dict && not (elem word words) = Valid (score word)
     | otherwise                               = NotValid (notValidReason dict letters words word) 
 
@@ -168,6 +169,13 @@ dictionaryTest = do
     print (totalScore gameDict)
 
 -- Play the game    
+showHelp :: IO ()
+showHelp = do
+    putStrLn "\nType a word to play"
+    putStrLn "Type :s to shuffle the list of letters"
+    putStrLn "Type :w to see all of the valid words that you've played"
+    putStrLn "Type :q to quit the game\n"
+
 printStatus :: Letters -> Dictionary -> [String] -> IO ()
 printStatus (ls,l) dict ws = do
     putStrLn ("Your letters: " ++ ls ++ " - all words must include letter " ++ (show l))
@@ -176,7 +184,7 @@ printStatus (ls,l) dict ws = do
 play :: Letters -> Dictionary -> [String] -> IO ()
 play letters dict words = do
     printStatus letters dict words
-    putStr "\nEnter a word: "
+    putStr "\nType a word (or :h for help): "
     w <- getLine
     case validatePlayedWord dict letters words w of
         Valid wordScore -> do
@@ -192,9 +200,13 @@ play letters dict words = do
         Shuffle -> do
             shuffled <- shuffle letters
             play shuffled dict words
+        Help -> do
+            showHelp
+            play letters dict words
         Quit -> do
+            putStrLn "\nYour words:"
             print (sort words)
-            putStrLn "Possible words:"
+            putStrLn "\nPossible words:"
             print dict
             putStrLn "\nBye!"
 
