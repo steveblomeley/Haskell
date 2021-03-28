@@ -15,8 +15,13 @@ fullBag :: Bag
 fullBag = concat . zipWith replicate letterCounts $ ['A'..'Z']
 
 -- Data types to describe a move
-data Alignment = H | V deriving Show
+
+-- Do we need alignment? Would imagine it's very rare to have a word that could be
+-- entered both Across and Down, starting from the same point . . . but as it could
+-- theoretically happen, lets make it explicit always
+-- e.g. Move Posn 'A' 12 Alignment Across "BLEEP"
+data Alignment = Across | Down deriving Show
 data Posn = Posn Char Int deriving Show
 type Word = String
-data Move = Move Alignment Posn Main.Word deriving Show
+data Move = Move Posn Alignment Main.Word deriving Show
 
