@@ -1,3 +1,5 @@
+import System.Random
+
 -- Note sure about these . . .
 data Bonus = None | Letter Int | Word Int
     deriving (Show)
@@ -5,6 +7,9 @@ data Bonus = None | Letter Int | Word Int
 -- Simple data types - declared to make function type declarations more explicit
 boardSize :: Int
 boardSize = 15
+
+rackSize :: Int
+rackSize = 7
 
 cols :: [Char]
 cols = take boardSize ['A'..'Z']
@@ -39,4 +44,35 @@ data Alignment = Across | Down deriving (Show, Read)
 data Position = Pos Char Int deriving (Show, Read)
 type Word = String
 data Move = Move Position Alignment Main.Word deriving (Show, Read)
+
+randomLetters :: [Char] -> Int -> IO [Char]
+randomLetters _ 0  = return []
+randomLetters cs n = do
+    i <- randomRIO (0, (length cs) - 1)
+    let x = cs !! i
+    xs <- randomLetters (filter (/= x) cs) (n-1)
+    return (x : xs)
+
+remove1 :: Eq a => [a] -> a -> [a]
+remove1 [] y = []
+remove1 (x:xs) y 
+   | x == y    = xs
+   | otherwise = x : (remove1 xs y)
+
+remove :: Eq a => [a] -> [a] -> [a]
+remove xs []     = xs
+remove xs (y:ys) = remove (remove1 xs y) ys 
+
+fillRack :: Rack -> Bag -> IO (Rack,Bag)
+fillRack rack bag = do
+    let lettersNeeded = rackSize - (length rack)
+    ls <- randomLetters bag lettersNeeded
+    let bag' = remove bag ls
+    return (rack ++ ls, bag')
+
+testFillRack :: IO ()
+testFillRack = do
+    (r,b) <- fillRack [] ['A'..'Z']
+    print r
+    print b
 
