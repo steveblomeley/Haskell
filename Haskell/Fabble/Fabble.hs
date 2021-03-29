@@ -15,13 +15,15 @@ fullBag :: Bag
 fullBag = concat . zipWith replicate letterCounts $ ['A'..'Z']
 
 -- Data types to describe a move
+-- e.g. STDIN> A 12 Across FLIPPER
+--    becomes: Move Posn 'A' 12 Alignment Across "FLIPPER"
+-- Test at GHCi with: 
+--    > Move (Pos a b) c d = read "Move (Pos 'C' 13) Down \"THINGY\"" :: Move
+--
+-- We will probably need to add "user" to the Move data type
 
--- Do we need alignment? Would imagine it's very rare to have a word that could be
--- entered both Across and Down, starting from the same point . . . but as it could
--- theoretically happen, lets make it explicit always
--- e.g. Move Posn 'A' 12 Alignment Across "BLEEP"
-data Alignment = Across | Down deriving Show
-data Posn = Posn Char Int deriving Show
+data Alignment = Across | Down deriving (Show, Read)
+data Position = Pos Char Int deriving (Show, Read)
 type Word = String
-data Move = Move Posn Alignment Main.Word deriving Show
+data Move = Move Position Alignment Main.Word deriving (Show, Read)
 
