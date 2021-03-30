@@ -1,3 +1,4 @@
+import Data.Char
 import System.Random
 
 -- Note sure about these . . .
@@ -18,6 +19,7 @@ rows :: [Int]
 rows = [1..boardSize]
 
 type Tile = Char
+type Word = [Tile]
 type Bag = [Tile]
 type Rack = [Tile]
 
@@ -42,10 +44,9 @@ find k kvs = head [v | (k',v) <- kvs, k' == k]
 
 data Alignment = Across | Down deriving (Show, Read)
 data Position = Pos Char Int deriving (Show, Read)
-type Word = String
 data Move = Move Position Alignment Main.Word deriving (Show, Read)
 
--- Ramdomly pick tiles from bag to rack
+-- Randomly pick tiles from bag to rack
 randomPick1 :: [a] -> IO a
 randomPick1 xs = do
     i <- randomRIO (0, (length xs) - 1)
@@ -68,6 +69,11 @@ without :: Eq a => [a] -> [a] -> [a]
 without xs []     = xs
 without xs (y:ys) = (xs `without1` y) `without` ys 
 
+minus :: (Eq a) => [a] -> [a] -> [a]
+minus [] _                 = []
+minus (y:ys) xs | elem y xs = minus ys xs
+                | otherwise = y : (minus ys xs)
+
 fillRack :: Rack -> Bag -> IO (Rack,Bag)
 fillRack rack bag = do
     ls <- randomPick bag (rackSize - (length rack))
@@ -78,3 +84,25 @@ testFillRack = do
     (r,b) <- fillRack [] ['A'..'Z']
     print r
     print b
+
+-- Basic move validation
+onlyAtoZ :: Main.Word -> Bool
+onlyAtoZ word = null (word `minus` ['A'..'Z'])
+
+tooLong :: Move -> Bool
+tooLong (Move (Pos col  _) Across word) = endColOfWord > lastColOnBoard
+                                          where
+                                              endColOfWord   = ord col + length word - 1
+                                              lastColOnBoard = ord (last cols)
+tooLong (Move (Pos _ row)  Down   word) = endRowOfWord > boardSize
+                                          where
+                                              endRowOfWord   = row + length word - 1
+
+checkMove :: Move -> Either String Bool
+checkMove (Move (Pos c r) a w) 
+    | not (elem r rows)            = Left ("Row should be in the range 1 to " ++ (show boardSize))
+    | not (elem c cols)            = Left ("Column should be in the range 'A' to " ++ (show $ last cols))
+    | not (onlyAtoZ w)             = Left ("Word should contain only the letters 'A' to 'Z'")
+    | tooLong (Move (Pos c r) a w) = Left ("That word runs off the edge of the board")
+    | otherwise                    = Right True
+
