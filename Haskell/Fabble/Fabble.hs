@@ -45,34 +45,36 @@ data Position = Pos Char Int deriving (Show, Read)
 type Word = String
 data Move = Move Position Alignment Main.Word deriving (Show, Read)
 
-randomLetters :: [Char] -> Int -> IO [Char]
-randomLetters _ 0  = return []
-randomLetters cs n = do
-    i <- randomRIO (0, (length cs) - 1)
-    let x = cs !! i
-    xs <- randomLetters (filter (/= x) cs) (n-1)
-    return (x : xs)
+-- Ramdomly pick tiles from bag to rack
+randomPick1 :: [a] -> IO a
+randomPick1 xs = do
+    i <- randomRIO (0, (length xs) - 1)
+    return (xs !! i)    
 
-remove1 :: Eq a => [a] -> a -> [a]
-remove1 [] y = []
-remove1 (x:xs) y 
+randomPick :: Eq a => [a] -> Int -> IO [a]
+randomPick _ 0  = return []
+randomPick xs n = do
+    x   <- randomPick1 xs
+    xs' <- randomPick (filter (/= x) xs) (n-1)
+    return (x : xs')
+
+without1 :: Eq a => [a] -> a -> [a]
+without1 [] y = []
+without1 (x:xs) y 
    | x == y    = xs
-   | otherwise = x : (remove1 xs y)
+   | otherwise = x : (xs `without1` y)
 
-remove :: Eq a => [a] -> [a] -> [a]
-remove xs []     = xs
-remove xs (y:ys) = remove (remove1 xs y) ys 
+without :: Eq a => [a] -> [a] -> [a]
+without xs []     = xs
+without xs (y:ys) = (xs `without1` y) `without` ys 
 
 fillRack :: Rack -> Bag -> IO (Rack,Bag)
 fillRack rack bag = do
-    let lettersNeeded = rackSize - (length rack)
-    ls <- randomLetters bag lettersNeeded
-    let bag' = remove bag ls
-    return (rack ++ ls, bag')
+    ls <- randomPick bag (rackSize - (length rack))
+    return (rack ++ ls, bag `without` ls)
 
 testFillRack :: IO ()
 testFillRack = do
     (r,b) <- fillRack [] ['A'..'Z']
     print r
     print b
-
