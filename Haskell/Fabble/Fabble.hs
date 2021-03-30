@@ -101,3 +101,37 @@ checkMove (Move (Pos c r) a w)
     | not (onlyAtoZ w)              = Left ("Word should contain only the letters 'A' to 'Z'")
     | offBoard (Move (Pos c r) a w) = Left ("That word runs off the edge of the board")
     | otherwise                     = Right True
+
+-- Model the board
+-- Initially as kv list - key is tuple of (col,row), value is Char
+-- How do we add a word to the board?
+
+-- First need to ask how we pass the state of the board between moves
+-- - Pass the board itself (i.e. the kv list)
+-- - Pass the list of moves so far, and play them against a blank board
+-- It may be simpler to pass the board
+
+-- So we only have one scenario to consider for adding a word to the board:
+-- - Adding a new word
+--   To do this, we need the board, plus "move", plus players rack
+--   Could return Either updated board & rack, or error message
+--   Adding a word could start at the origin position for the word
+--   The previous square must be either blank, or off edge of board
+--   We need to traverse each letter of the word, checking that:
+--   - If the position already has a tile, it's the correct letter
+--   - If the position is blank, the missing tile is available in the user's
+--     rack - add the tile to the board, regenerate rack minus that tile
+--   Once we reach end of word, next square must be either blank, or off
+--   the edge of the board
+--   Now we can search for perpendicular words - by searching from each
+--   position in the new word. Then check that the played word, plus all 
+--   perpendicular words are found in the dictionary.
+--   ...Then think about scoring
+--   ...Think about bonuses (maybe another k,v list, where bonuses are
+--      removed after being played)
+--   ...And finally the state that needs to be passed to next move, a.k.a.
+--      the "game" state - board + bonuses + next player
+
+-- Also consider how words played across and words played down could be
+-- processed by almost exactly the same code - just need to consider the 
+-- board to be rotated by 90 degrees
