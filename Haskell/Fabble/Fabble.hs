@@ -56,7 +56,7 @@ randomPick :: Eq a => [a] -> Int -> IO [a]
 randomPick _ 0  = return []
 randomPick xs n = do
     x   <- randomPick1 xs
-    xs' <- randomPick (filter (/= x) xs) (n-1)
+    xs' <- randomPick (xs `without1` x) (n-1)
     return (x : xs')
 
 without1 :: Eq a => [a] -> a -> [a]
@@ -69,11 +69,6 @@ without :: Eq a => [a] -> [a] -> [a]
 without xs []     = xs
 without xs (y:ys) = (xs `without1` y) `without` ys 
 
-minus :: (Eq a) => [a] -> [a] -> [a]
-minus [] _                 = []
-minus (y:ys) xs | elem y xs = minus ys xs
-                | otherwise = y : (minus ys xs)
-
 fillRack :: Rack -> Bag -> IO (Rack,Bag)
 fillRack rack bag = do
     ls <- randomPick bag (rackSize - (length rack))
@@ -81,28 +76,28 @@ fillRack rack bag = do
 
 testFillRack :: IO ()
 testFillRack = do
-    (r,b) <- fillRack [] ['A'..'Z']
+    print fullBag
+    (r,b) <- fillRack [] fullBag
     print r
     print b
 
 -- Basic move validation
 onlyAtoZ :: Main.Word -> Bool
-onlyAtoZ word = null (word `minus` ['A'..'Z'])
+onlyAtoZ = foldr (\c b -> b && elem c ['A'..'Z']) True
 
-tooLong :: Move -> Bool
-tooLong (Move (Pos col  _) Across word) = endColOfWord > lastColOnBoard
-                                          where
-                                              endColOfWord   = ord col + length word - 1
-                                              lastColOnBoard = ord (last cols)
-tooLong (Move (Pos _ row)  Down   word) = endRowOfWord > boardSize
-                                          where
-                                              endRowOfWord   = row + length word - 1
+offBoard :: Move -> Bool
+offBoard (Move (Pos col  _) Across word) = lastColOfWord > lastColOnBoard
+                                           where
+                                               lastColOfWord  = ord col + length word - 1
+                                               lastColOnBoard = ord (last cols)
+offBoard (Move (Pos _ row)  Down   word) = lastRowOfWord > boardSize
+                                           where
+                                               lastRowOfWord = row + length word - 1
 
 checkMove :: Move -> Either String Bool
 checkMove (Move (Pos c r) a w) 
-    | not (elem r rows)            = Left ("Row should be in the range 1 to " ++ (show boardSize))
-    | not (elem c cols)            = Left ("Column should be in the range 'A' to " ++ (show $ last cols))
-    | not (onlyAtoZ w)             = Left ("Word should contain only the letters 'A' to 'Z'")
-    | tooLong (Move (Pos c r) a w) = Left ("That word runs off the edge of the board")
-    | otherwise                    = Right True
-
+    | not (elem r rows)             = Left ("Row should be in the range 1 to " ++ (show boardSize))
+    | not (elem c cols)             = Left ("Column should be in the range 'A' to " ++ (show $ last cols))
+    | not (onlyAtoZ w)              = Left ("Word should contain only the letters 'A' to 'Z'")
+    | offBoard (Move (Pos c r) a w) = Left ("That word runs off the edge of the board")
+    | otherwise                     = Right True
