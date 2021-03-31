@@ -22,6 +22,7 @@ type Tile = Char
 type Word = [Tile]
 type Bag = [Tile]
 type Rack = [Tile]
+type Board = [(Position,Tile)]
 
 letterCounts = [9,2,2,4,12,2,3,2,9,1,1,4,2,6,8,2,1,6,4,6,4,2,2,1,2,1]
 letterScores = [1,3,3,2,1,4,2,4,1,8,5,1,3,1,1,3,10,1,1,1,1,4,4,8,4,10]
@@ -31,8 +32,10 @@ fullBag = concat . zipWith replicate letterCounts $ ['A'..'Z']
 
 scores = zip ['A'..'Z'] letterScores
 
-find :: Eq k => k -> [(k,v)] -> v
-find k kvs = head [v | (k',v) <- kvs, k' == k]
+tryFind :: Eq k => k -> [(k,v)] -> Maybe v
+tryFind k kvs = if null vs then Nothing else Just (head vs)
+                where 
+                    vs = [v | (k',v) <- kvs, k' == k]
 
 -- Data types to describe a move
 -- e.g. STDIN> A 12 Across FLIPPER
@@ -43,7 +46,7 @@ find k kvs = head [v | (k',v) <- kvs, k' == k]
 -- We will probably need to add "user" to the Move data type
 
 data Alignment = Across | Down deriving (Show, Read)
-data Position = Pos Char Int deriving (Show, Read)
+data Position = Pos Char Int deriving (Show, Read, Eq)
 data Move = Move Position Alignment Main.Word deriving (Show, Read)
 
 -- Randomly pick tiles from bag to rack
@@ -103,35 +106,56 @@ checkMove (Move (Pos c r) a w)
     | otherwise                     = Right True
 
 -- Model the board
--- Initially as kv list - key is tuple of (col,row), value is Char
+--
 -- How do we add a word to the board?
-
--- First need to ask how we pass the state of the board between moves
+--
+-- First consider how we pass the state of the board between moves
 -- - Pass the board itself (i.e. the kv list)
 -- - Pass the list of moves so far, and play them against a blank board
--- It may be simpler to pass the board
-
--- So we only have one scenario to consider for adding a word to the board:
--- - Adding a new word
---   To do this, we need the board, plus "move", plus players rack
---   Could return Either updated board & rack, or error message
---   Adding a word could start at the origin position for the word
---   The previous square must be either blank, or off edge of board
---   We need to traverse each letter of the word, checking that:
---   - If the position already has a tile, it's the correct letter
---   - If the position is blank, the missing tile is available in the user's
---     rack - add the tile to the board, regenerate rack minus that tile
+-- Let's choose to pass the board initially
+--
+-- Checks still to be added:
+--   From the origin position for the word, the previous square must be either
+--   blank, or off edge of board
 --   Once we reach end of word, next square must be either blank, or off
 --   the edge of the board
---   Now we can search for perpendicular words - by searching from each
---   position in the new word. Then check that the played word, plus all 
---   perpendicular words are found in the dictionary.
---   ...Then think about scoring
---   ...Think about bonuses (maybe another k,v list, where bonuses are
---      removed after being played)
---   ...And finally the state that needs to be passed to next move, a.k.a.
---      the "game" state - board + bonuses + next player
-
+--   Once the word has been added to the board, check that at least one tile
+--   has been used from the player's rack
+--
+-- Perpendicular words & dictionary check
+--   Search for perpendicular words from each position in the new word.
+--   Then check that the played word, plus all perp words are in the dictionary.
+--
+-- Scoring
+--   Then think about scoring
+--   Think about bonuses - setup a k,v list of all available bonuses, keyed by 
+--   position. Once a bonus is applied, it is removed from the list passed to 
+--   to the next turn
+--
+-- State
+--   What state needs to be passed to next turn? 
+--   - Board
+--   - Bonuses
+--   - Racks (pass ALL racks in play - not just the one that has the next turn)
+--   - Player whose turn it is next
+--
 -- Also consider how words played across and words played down could be
 -- processed by almost exactly the same code - just need to consider the 
 -- board to be rotated by 90 degrees
+
+nextPos :: Position -> Alignment -> Position
+nextPos (Pos c r) Down   = Pos c (r + 1)
+nextPos (Pos c r) Across = Pos (chr((ord c)+1)) r
+
+addTiles :: Board -> Rack -> Main.Word -> Position -> Alignment -> Either String (Board,Rack)
+addTiles b r [] _ _     = Right (b,r) -- Calling code must check that returned rack has fewer tiles
+addTiles b r (t:ts) p a = 
+    case tryFind p b of
+        Nothing -> if elem t r then 
+                       addTiles ((p,t):b) (r `without1` t) ts (nextPos p a) a
+                   else
+                       Left "That word needs a tile that isn't in your rack"  
+        Just t' -> if t == t' then
+                       addTiles b r ts (nextPos p a) a 
+                   else 
+                       Left "That word does not match tiles already on the board"
