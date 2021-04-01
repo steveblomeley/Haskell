@@ -37,6 +37,9 @@ tryFind k kvs = if null vs then Nothing else Just (head vs)
                 where 
                     vs = [v | (k',v) <- kvs, k' == k]
 
+find :: Eq k => k -> [(k,v)] -> v
+find k kvs = head [v | (k',v) <- kvs, k' == k]
+
 -- Data types to describe a move
 -- e.g. STDIN> A 12 Across FLIPPER
 --    becomes: Move Posn 'A' 12 Alignment Across "FLIPPER"
@@ -45,7 +48,8 @@ tryFind k kvs = if null vs then Nothing else Just (head vs)
 --
 -- We will probably need to add "user" to the Move data type
 
-data Alignment = Across | Down deriving (Show, Read)
+data Alignment = Horizontal | Vertical deriving (Show, Read, Eq)
+data Direction = Up | Down | Left | Right deriving Show
 data Position = Pos Char Int deriving (Show, Read, Eq)
 data Move = Move Position Alignment Main.Word deriving (Show, Read)
 
@@ -88,22 +92,22 @@ testFillRack = do
 onlyAtoZ :: Main.Word -> Bool
 onlyAtoZ = foldr (\c b -> b && elem c ['A'..'Z']) True
 
-offBoard :: Move -> Bool
-offBoard (Move (Pos col  _) Across word) = lastColOfWord > lastColOnBoard
-                                           where
-                                               lastColOfWord  = ord col + length word - 1
-                                               lastColOnBoard = ord (last cols)
-offBoard (Move (Pos _ row)  Down   word) = lastRowOfWord > boardSize
-                                           where
-                                               lastRowOfWord = row + length word - 1
+runsOffBoard :: Move -> Bool
+runsOffBoard (Move (Pos col  _) Horizontal word) = lastColOfWord > lastColOnBoard
+                                                   where
+                                                       lastColOfWord  = ord col + length word - 1
+                                                       lastColOnBoard = ord (last cols)
+runsOffBoard (Move (Pos _ row) Vertical word) = lastRowOfWord > boardSize
+                                                where
+                                                    lastRowOfWord = row + length word - 1
 
 checkMove :: Move -> Either String Bool
 checkMove (Move (Pos c r) a w) 
-    | not (elem r rows)             = Left ("Row should be in the range 1 to " ++ (show boardSize))
-    | not (elem c cols)             = Left ("Column should be in the range 'A' to " ++ (show $ last cols))
-    | not (onlyAtoZ w)              = Left ("Word should contain only the letters 'A' to 'Z'")
-    | offBoard (Move (Pos c r) a w) = Left ("That word runs off the edge of the board")
-    | otherwise                     = Right True
+    | not (elem r rows)                 = Prelude.Left ("Row should be in the range 1 to " ++ (show boardSize))
+    | not (elem c cols)                 = Prelude.Left ("Column should be in the range 'A' to " ++ (show $ last cols))
+    | not (onlyAtoZ w)                  = Prelude.Left ("Word should contain only the letters 'A' to 'Z'")
+    | runsOffBoard (Move (Pos c r) a w) = Prelude.Left ("That word runs off the edge of the board")
+    | otherwise                         = Prelude.Right True
 
 -- Model the board
 --
@@ -115,10 +119,6 @@ checkMove (Move (Pos c r) a w)
 -- Let's choose to pass the board initially
 --
 -- Checks still to be added:
---   From the origin position for the word, the previous square must be either
---   blank, or off edge of board
---   Once we reach end of word, next square must be either blank, or off
---   the edge of the board
 --   Once the word has been added to the board, check that at least one tile
 --   has been used from the player's rack
 --
@@ -142,20 +142,73 @@ checkMove (Move (Pos c r) a w)
 -- Also consider how words played across and words played down could be
 -- processed by almost exactly the same code - just need to consider the 
 -- board to be rotated by 90 degrees
+offBoard :: Position -> Bool
+offBoard (Pos col row) = col < head cols || col > last cols || row < head rows || row > last rows 
 
-nextPos :: Position -> Alignment -> Position
-nextPos (Pos c r) Down   = Pos c (r + 1)
-nextPos (Pos c r) Across = Pos (chr((ord c)+1)) r
+shift :: Direction -> Int -> Position -> Position
+shift Up         n (Pos c r) = Pos c (r - n)
+shift Down       n (Pos c r) = Pos c (r + n)
+shift Main.Right n (Pos c r) = Pos (chr((ord c) + n)) r
+shift Main.Left  n (Pos c r) = Pos (chr((ord c) - n)) r
+
+nextPos :: Alignment -> Position -> Position
+nextPos Horizontal = shift Main.Right 1
+nextPos Vertical   = shift Down       1
+
+prevPos :: Alignment -> Position -> Position
+prevPos Horizontal = shift Main.Left 1
+prevPos Vertical   = shift Up        1
 
 addTiles :: Board -> Rack -> Main.Word -> Position -> Alignment -> Either String (Board,Rack)
-addTiles b r [] _ _     = Right (b,r) -- Calling code must check that returned rack has fewer tiles
+addTiles b r [] _ _     = Prelude.Right (b,r) -- Calling code must check that returned rack has fewer tiles
 addTiles b r (t:ts) p a = 
     case tryFind p b of
         Nothing -> if elem t r then 
-                       addTiles ((p,t):b) (r `without1` t) ts (nextPos p a) a
+                       addTiles ((p,t):b) (r `without1` t) ts (nextPos a p) a
                    else
-                       Left "That word needs a tile that isn't in your rack"  
+                       Prelude.Left "That word needs a tile that isn't on your rack"  
         Just t' -> if t == t' then
-                       addTiles b r ts (nextPos p a) a 
+                       addTiles b r ts (nextPos a p) a 
                    else 
-                       Left "That word does not match tiles already on the board"
+                       Prelude.Left "One or more letters in that word do not match tiles already on the board"
+
+isEmpty :: Board -> Position -> Bool
+isEmpty b p = tryFind p b == Nothing                     
+
+checkWordBoundaries :: Board -> Move -> Bool
+checkWordBoundaries b (Move p a w) = (offBoard pBeforeStart || isEmpty b pBeforeStart) &&
+                                     (offBoard pAfterEnd    || isEmpty b pAfterEnd)
+                                     where
+                                         pBeforeStart  = prevPos a p
+                                         pAfterEnd     = nextPos a lastPosInWord
+                                         lastPosInWord = shift direction (length w) p
+                                         direction     = if a == Horizontal then Main.Right else Down
+
+adjacent :: Direction -> Position -> Position
+adjacent d = shift d 1
+
+findLetters :: Direction -> Board -> Position -> String
+findLetters d b p
+    | offBoard p  = []
+    | isEmpty b p = []
+    | otherwise   = (find p b) : findLetters d b (adjacent d p)       
+
+findLettersUp :: Board -> Position -> String
+findLettersUp b p = reverse (findLetters Up b p)
+    
+findLettersDown :: Board -> Position -> String
+findLettersDown = findLetters Down
+    
+findLettersLeft :: Board -> Position -> String
+findLettersLeft b p = reverse (findLetters Main.Left b p)
+    
+findLettersRight :: Board -> Position -> String
+findLettersRight = findLetters Main.Right
+    
+
+{-
+
+findXWord :: Alignment -> Board -> Pos -> Alignment
+findXword b p Across = (findLettersUp b p) ++ [find p b] ++ (findLettersDown b p)
+
+-}
