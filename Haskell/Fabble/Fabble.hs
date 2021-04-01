@@ -205,10 +205,6 @@ findLettersLeft b p = reverse (findLetters Main.Left b p)
 findLettersRight :: Board -> Position -> String
 findLettersRight = findLetters Main.Right
     
-
-{-
-
-findXWord :: Alignment -> Board -> Pos -> Alignment
-findXword b p Across = (findLettersUp b p) ++ [find p b] ++ (findLettersDown b p)
-
--}
+findXWord :: Alignment -> Board -> Position -> String
+findXWord Horizontal b p = (findLettersUp b p) ++ tail (findLettersDown b p)
+findXWord Vertical   b p = (findLettersLeft b p) ++ tail (findLettersRight b p)
