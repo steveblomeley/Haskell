@@ -308,8 +308,22 @@ findXWords a b p
 --                                         \
 --                                          +--> No --> Player A makes move --> Valid move? --> etc ..
 
--- Print the board
 
+-- Print the board, like this:
+{-
+
+     A   B   C   D  etc...
+   +---+---+---+---+
+1  |   | Y |   |   |
+   +---+---+---+---+
+2  | H | E | L | P |
+   +---+---+---+---+
+3  |   | L |   |   |
+   +---+---+---+---+
+4  |   | P |   |   |
+   +---+---+---+---+
+
+-}
 interleave :: [a] -> [a] -> [a]
 interleave [] (y:ys) = [y]
 interleave (x:xs) [] = [x]
@@ -329,8 +343,13 @@ squareContent pos board = case tryFind pos board of
 rowContents :: Board -> Int -> [String]
 rowContents board row = [squareContent (Pos col row) board | col <- cols]
 
+rowNumber :: Int -> String
+rowNumber row = n ++ (concat(replicate (3-l) " "))
+                where n = show row
+                      l = length n 
+
 printRow :: Board -> Int -> IO ()
-printRow board row = putStrLn ("   |" ++ concat(interleave (rowContents board row) (repeat "|")))
+printRow board row = putStrLn ((rowNumber row) ++ concat(interleave (repeat "|") (rowContents board row)))
 
 printBody :: Board -> Int -> IO ()
 printBody board row
@@ -339,26 +358,7 @@ printBody board row
                            printRow board row
                            printBody board (row+1)
 
-
 printBoard :: Board -> IO ()
 printBoard b = do
     printHeader
     printBody b 1
-    
-
-{-
-
-     A   B   C   D   E   F
-   +---+---+---+---+---+---+
-1  |   | Y |   |   |   |   |
-   +---+---+---+---+---+---+
-2  | H | E | L | P |   |   |
-   +---+---+---+---+---+---+
-3  |   | L |   |   |   |   |
-   +---+---+---+---+---+---+
-4  |   | P |   |   |   |   |
-   +---+---+---+---+---+---+
-5  |   |   |   |   |   |   |
-   +---+---+---+---+---+---+
-
--}
