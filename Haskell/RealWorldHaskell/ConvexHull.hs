@@ -25,6 +25,13 @@ zCoordinateXpOfV :: Point -> Point -> Point -> Double
 zCoordinateXpOfV (x1,y1) (x2,y2) (x3,y3) = 
     (x2 - x1) * (y3 -y1) - (y2 - y1) * (x3 - x1)               
 
+sortPointsFromOrigin :: [Point] -> (Point,[Point])
+sortPointsFromOrigin ps = (pOrigin, psSorted ++ [pOrigin])
+                          where
+                              pOrigin = leftMostBottomMost ps
+                              remainingPs = filter (\p -> p /= pOrigin) ps
+                              psSorted = sortFromOrigin pOrigin remainingPs
+
 convexHullInternal :: [Point] -> [Point] -> [Point]
 convexHullInternal psToKeep [_] = psToKeep
 convexHullInternal psToKeep (pThis:pNext:psRemaining) = 
@@ -37,8 +44,6 @@ convexHullInternal psToKeep (pThis:pNext:psRemaining) =
 convexHull :: [Point] -> [Point]
 convexHull ps
     | length ps < 4 = ps
-    | otherwise     = convexHullInternal [pOrigin] (psSorted ++ [pOrigin])
-                      where
-                          pOrigin = leftMostBottomMost ps
-                          remainingPs = filter (\p -> p /= pOrigin) ps
-                          psSorted = sortFromOrigin pOrigin remainingPs
+    | otherwise     = convexHullInternal [pOrigin] sortedPs
+                      where 
+                          (pOrigin, sortedPs) = sortPointsFromOrigin ps
