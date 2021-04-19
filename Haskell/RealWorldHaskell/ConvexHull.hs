@@ -19,9 +19,23 @@ leftMostBottomMost ps =
         bottomToTop = orderBottomUp ps
 
 sortFromOrigin :: Point -> [Point] -> [Point]
-sortFromOrigin (xo,yo) = sortBy (\p p' -> compare (angleFromOrigin p) (angleFromOrigin p'))
-                         where
-                             angleFromOrigin (x,y) = atan2 (y-yo) (x-xo)
+sortFromOrigin po = sortBy (\p1 p2 -> sorter po p1 p2)
+
+sorter :: Point -> Point -> Point -> Ordering
+sorter po p1 p2 = if angle1 /= angle2
+                      then compare angle1 angle2                            
+                      else compare distance1 distance2
+                  where
+                      angle1 = angleFromOrigin po p1
+                      angle2 = angleFromOrigin po p2
+                      distance1 = distanceBetween po p1
+                      distance2 = distanceBetween po p2
+                      
+angleFromOrigin :: Point -> Point -> Double
+angleFromOrigin (xo,yo) (x,y) = atan2 (y-yo) (x-xo)
+
+distanceBetween :: Point -> Point -> Double
+distanceBetween (xo,yo) (x,y) = sqrt( ((x-xo)^2) + ((y-yo)^2) )
 
 directionOfTurn :: Point -> Point -> Point -> Direction
 directionOfTurn (x1,y1) (x2,y2) (x3,y3) = 
