@@ -4,9 +4,6 @@ type Point = (Double,Double)
 
 data Direction = LeftTurn | RightTurn deriving Eq
 
-sortByX :: [Point] -> [Point]
-sortByX = sortBy (\(x,_) (x',_) -> compare x x')
-
 xValue :: Point -> Double
 xValue (x,_) = x
 
