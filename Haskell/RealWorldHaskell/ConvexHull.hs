@@ -5,10 +5,10 @@ type Point = (Double,Double)
 data Direction = LeftTurn | RightTurn deriving Eq
 
 xValue :: Point -> Double
-xValue (x,_) = x
+xValue = fst
 
 yValue :: Point -> Double
-yValue (_,y) = y
+yValue = snd
 
 xValues :: [Point] -> [Double]
 xValues = map xValue
