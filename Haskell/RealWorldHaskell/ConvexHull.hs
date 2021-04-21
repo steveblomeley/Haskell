@@ -17,10 +17,10 @@ yValues :: [Point] -> [Double]
 yValues = map yValue
 
 xEquals :: Double -> Point -> Bool
-xEquals n = (==) n . xValue
+xEquals n p = (xValue p) == n
 
 yEquals :: Double -> Point -> Bool
-yEquals n = (==) n . yValue
+yEquals n p = (yValue p) == n
 
 whereXEquals :: [Point] -> Double -> [Point]
 whereXEquals ps x = filter (xEquals x) ps
@@ -33,10 +33,10 @@ lowest = foldr1 min
 
 leftMostBottomMost :: [Point] -> Point
 leftMostBottomMost ps = 
-    head $ psWithLowestYValue `whereXEquals` lowestX
+    head $ bottomMostPs `whereXEquals` lowestX
     where 
-        lowestX = lowest $ xValues psWithLowestYValue
-        psWithLowestYValue = ps `whereYEquals` lowestY
+        lowestX = lowest $ xValues bottomMostPs
+        bottomMostPs = ps `whereYEquals` lowestY
         lowestY = lowest $ yValues ps
 
 angleFromOrigin :: Point -> Point -> Double
@@ -72,10 +72,9 @@ directionOfTurn (x1,y1) (x2,y2) (x3,y3) =
 
 convexHullInternal :: [Point] -> Point -> [Point] -> [Point]
 convexHullInternal psToKeep pOrigin [] = psToKeep
-convexHullInternal (pLast:psToKeep) pThis (pNext:psRemaining) = 
-    if direction == RightTurn
-        then convexHullInternal psToKeep pLast (pNext:psRemaining)        -- discard and move back
-        else convexHullInternal (pThis:pLast:psToKeep) pNext psRemaining  -- keep and move forward
+convexHullInternal (pLast:psToKeep) pThis (pNext:psRemaining)
+    | direction == RightTurn = convexHullInternal psToKeep pLast (pNext:psRemaining)        -- discard and move back
+    | otherwise              = convexHullInternal (pThis:pLast:psToKeep) pNext psRemaining  -- keep and move forward
     where
         direction = directionOfTurn pLast pThis pNext
 
