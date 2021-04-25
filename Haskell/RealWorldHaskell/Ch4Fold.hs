@@ -30,3 +30,27 @@ groupByFold p = foldr grouper []
         grouper x (y:ys) = if p x (head y) then (x:y) : (ys) else [x] : y : ys
 
 -- 10. any, cycle, words and unlines - using folds?
+
+-- any
+anyFold :: (a -> Bool) -> [a] -> Bool
+anyFold p = foldr (\x acc -> acc || p x) False
+
+-- cycle [a,b,c] -> [a,b,c,a,b,c,a,b,c,a...ad nauseam]
+--cycleFold :: [a] -> [a]
+--cycleFold = ?
+
+-- map
+mapFold :: (a -> b) -> [a] -> [b]
+mapFold f = foldr (\x acc -> (f x) : acc) []
+
+-- words - not pretty! but does the job
+wordsFold :: [Char] -> [[Char]]
+wordsFold = snd . foldr helper (False,[[]])
+    where 
+        helper c (inspace,(x:xs))
+            | isSpace c = (x /= [],  x:xs)
+            | otherwise = (False, if inspace then [c]:x:xs else (c:x):xs)
+
+-- unlines
+unlinesFold :: [String] -> String
+unlinesFold = foldr (\l ls -> if null ls then l else l ++ '\n' : ls) ""            
