@@ -156,43 +156,66 @@ w `fits` ""        = True
 w `fits` ('\n':_)  = True
 w `fits` (c:cs)    = (w - 1) `fits` cs
 
+-- print the Doc tree structure itself
+treePrint :: Doc -> String
+treePrint d = dPrint 0 [] d
+    where dPrint l is Empty          = pad l is ++ "Empty\n"
+          dPrint l is (Char c)       = pad l is ++ "Char: '" ++ [c] ++ "'\n"
+          dPrint l is (Text s)       = pad l is ++ "Text: \"" ++ s ++ "\"\n"
+          dPrint l is Line           = pad l is ++ "Line\n"
+          dPrint l is (a `Concat` b) = printLeftNode l is a ++ printConcat l is ++ printRightNode l is b
+          dPrint l is (a `Union` b)  = printLeftNode l is a ++ printUnion  l is ++ printRightNode l is b
+          printLeftNode  l is n = dPrint (l+1) (lFilter l is) n
+          printRightNode l is n = dPrint (l+1) (rFilter l is) n
+          printUnion  l is = pad l is ++ "Union\n"
+          printConcat l is = pad l is ++ "Concat\n"
+
+pad :: Level -> [Instruction] -> String
+pad l is = levels (upToLevel l) is ++ "   +--"
+
+levels :: Level -> [Instruction] -> String
+levels l is 
+    | l < 0     = ""
+    | l == 0    = level 0 is
+    | otherwise = levels (upToLevel l) is ++ level l is
+
+level :: Level -> [Instruction] -> String
+level l is = case lookup l is of
+                 Just A -> "   |  "
+                 _      -> "      "
+
+upToLevel :: Level -> Level
+upToLevel l = l - 1
+
+-- A printing instructions means : you must print a "|" character at level N
+data Direction = L | A | R deriving (Show,Eq)
+type Level = Int
+type Instruction = (Level,Direction)
+
+-- Add any branching node in the tree, we add instructions for deeper nodes, re: printing "|" characters (to represent structure of tree)
+-- For a Left branch  - existing "Right" instructions are discarded; existing "Left"  instructions become "All" instructions; a new "Right" instruction is added
+-- For a Right branch - existing "Left"  instructions are discarded; existing "Right" instructions become "All" instructions; a new "Left"  instruction is added
+lFilter :: Level -> [Instruction] -> [Instruction]
+lFilter level = add level R . swap L A . remove R
+
+rFilter :: Level -> [Instruction] -> [Instruction]
+rFilter level = add level L . swap R A . remove L
+
+add :: Level -> Direction -> [Instruction] -> [Instruction]
+add l d is = (l+1,d):is
+
+remove :: Direction -> [Instruction] -> [Instruction]
+remove d = filter (\(_,d') -> d /= d')
+
+swap :: Direction -> Direction -> [Instruction] -> [Instruction]
+swap d1 d2 = map (\(l,d) -> if d == d1 then (l,d2) else (l,d))
 
 {-
 
+Visualize tree traversal
+
 x = JObject [("this", JBool True),("that", JNumber 1234)]
-
-JObject [("this",JBool True),("that",JNumber 1234.0)]
-
-
 y = renderJValue x
-
-         +--03.Char '{'
-   +--02.Concat 
-   |     +                             +--09.Text "this"
-   |     |                       +--08.Concat
-   |     |                       |     +--10.Text ": "
-   |     |                 +--07.Concat 
-   |     |                 |     +--11.Text "true"
-   |     |           +--06.Concat  
-   |     |           |     +--12.Char ','
-   |     |     +--05.Concat  
-   |     |     |     |     +--14.Char ' '
-   |     |     |     +--13.Union 
-   |     |     |           +--15.Line
-   |     +--04.Concat  
-   |           |                 +--19.Text "that"
-   |           |           +--18.Concat
-   |           |           |     +--20.Text ": "
-   |           |     +--17.Concat
-   |           |     |     +--21.Text "1234.0"
-   |           +--16.Concat  
-   |                 |     +--23.Char ' '
-   |                 +--22.Union
-   |                       +--24.Line
-01.Concat 
-   +--25..Char '}'
-
-
 pretty 80 y
 
 01.Concat                                                                   ""    
@@ -216,5 +239,7 @@ pretty 80 y
           21.Text 22.Union 25.Char                                          "{this: true,\nthat: "              
         22.Union 25.Char                                                    "{this: true,\nthat: 1234.0"              
       25.Char                                                               "{this: true,\nthat: 1234.0\n"              
-                                                                            "{this: true,\nthat: 1234.0\n}"      
+
+      "{this: true,\nthat: 1234.0\n}"      
+
 -}         
