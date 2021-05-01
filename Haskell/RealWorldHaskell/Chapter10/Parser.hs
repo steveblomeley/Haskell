@@ -34,6 +34,7 @@ getBytes n str = let count           = fromIntegral n
                     then Nothing
                     else Just both
 
+-- Now for the death march ...                    
 parseP5 :: L.ByteString -> Maybe (Greymap, L.ByteString)
 parseP5 s =
   case matchHeader (L8.pack "P5") s of
@@ -57,3 +58,28 @@ parseP5 s =
                           Nothing -> Nothing
                           Just (bitmap, s6) -> 
                             Just (Greymap width height maxGrey bitmap, s6)
+
+-- Two patterns in the death march:
+-- - Functions with signature ... -> ByteString -> Maybe a b
+-- - Case expressions that deconstruct a Maybe value, and either return 
+--   Nothing or proceed to next step
+
+(>>?) :: Maybe a -> (a -> Maybe b) -> Maybe b
+Nothing  >>? _ = Nothing
+(Just x) >>? f = f x
+
+skipSpace :: (a, L.ByteString) -> Maybe (a, L.ByteString)
+skipSpace (a, s) = Just (a, L8.dropWhile isSpace s)
+
+parseP5' :: L.ByteString -> Maybe (Greymap, L.ByteString)
+parseP5' s =
+  matchHeader (L8.pack "P5") s     >>?   -- (1) take bytes minus header
+  \s -> skipSpace ((),s)           >>?   -- (2) coerce result of (1) to tuple so can strip whitespace from head of bytes
+  (getNat . snd)                   >>?   -- (3) read natural from head of snd part of output from (2)
+  skipSpace                        >>?   -- (4) strip whitespace from head of snd part of output from (3)
+  \(width, s) -> getNat s          >>?   -- (5) name the output from (4), then read number from head of snd part
+  skipSpace                        >>?   -- (6) strip whitespace from head of snd part of output from (5)
+  \(height, s) -> getNat s         >>?   -- (7) name the output from (6), then read number from head of snd part
+  \(maxGrey, s) -> getBytes 1 s    >>?   -- (8) name the output from (7), then discard 1 byte from head of snd part
+  (getBytes (width*height) . snd)  >>?   -- (9) read image bytes from head of remaining bytes
+  \(bitmap, s) -> Just (Greymap width height maxGrey bitmap, s)
